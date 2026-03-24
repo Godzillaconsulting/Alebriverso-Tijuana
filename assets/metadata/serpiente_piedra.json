@@ -1,0 +1,10 @@
+{
+  "asset_id": "enemy_serpiente_piedra",
+  "type": "Character/Enemy",
+  "style": "Retro 3D HD",
+  "material_properties": ["Stone", "Neon Green Emissive", "Neon Red Emissive"],
+  "theoretical_scale_ue5": "x: 1.0, y: 1.0, z: 1.0",
+  "suggested_collision_type": "Capsule",
+  "sprite_size": "2048x2048",
+  "has_alpha_mask": true
+}

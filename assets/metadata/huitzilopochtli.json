@@ -1,0 +1,11 @@
+{
+  "asset_id": "boss_huitzilopochtli",
+  "type": "Character/Boss",
+  "style": "Retro 3D HD",
+  "material_properties": ["Feathers", "Neon Turquoise Emissive", "Magenta Emissive", "Glowing Sword"],
+  "theoretical_scale_ue5": "x: 3.5, y: 3.5, z: 3.5",
+  "suggested_collision_type": "Capsule",
+  "sprite_size": "2048x2048",
+  "has_alpha_mask": true,
+  "notes_for_scene_agent": "Requires strong emissive glow on the sword based on turquoise neon."
+}

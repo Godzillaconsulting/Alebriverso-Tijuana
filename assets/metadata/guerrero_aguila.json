@@ -1,0 +1,10 @@
+{
+  "asset_id": "enemy_guerrero_aguila",
+  "type": "Character/Enemy",
+  "style": "Retro 3D HD",
+  "material_properties": ["Feathers", "Leather", "Neon Yellow Emissive", "Obsidian Blade"],
+  "theoretical_scale_ue5": "x: 1.1, y: 1.1, z: 1.1",
+  "suggested_collision_type": "Capsule",
+  "sprite_size": "2048x2048",
+  "has_alpha_mask": true
+}

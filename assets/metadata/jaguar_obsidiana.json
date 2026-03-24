@@ -1,0 +1,10 @@
+{
+  "asset_id": "enemy_jaguar_obsidiana",
+  "type": "Character/Enemy",
+  "style": "Retro 3D HD",
+  "material_properties": ["Obsidian", "Neon Orange Tribal Emissive", "Crystal Spikes"],
+  "theoretical_scale_ue5": "x: 1.2, y: 1.2, z: 1.2",
+  "suggested_collision_type": "Box",
+  "sprite_size": "2048x2048",
+  "has_alpha_mask": true
+}

@@ -1,0 +1,10 @@
+{
+  "asset_id": "texture_tenochtitlan_wall",
+  "type": "Environment/Texture",
+  "style": "Retro 3D Platformer",
+  "material_properties": ["Stone", "Moss", "Flat Colors"],
+  "theoretical_scale_ue5": "x: 1.0, y: 1.0, z: 1.0",
+  "suggested_collision_type": "N/A",
+  "texture_size": "2048x2048",
+  "is_seamless": true
+}

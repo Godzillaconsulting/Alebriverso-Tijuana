@@ -1,0 +1,10 @@
+{
+  "asset_id": "npc_sacerdote_sangre",
+  "type": "Character/NPC",
+  "style": "Retro 3D HD",
+  "material_properties": ["Cotton Cloth", "Jade Ornaments", "Neon Crimson Emissive Aura", "Gold"],
+  "theoretical_scale_ue5": "x: 1.0, y: 1.0, z: 1.0",
+  "suggested_collision_type": "Capsule",
+  "sprite_size": "2048x2048",
+  "has_alpha_mask": true
+}

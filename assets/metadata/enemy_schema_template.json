@@ -1,0 +1,40 @@
+{
+  "asset_id": "boss_huitzilopochtli",
+  "type": "Boss",
+  "visuals": {
+    "style": "Retro 3D HD",
+    "theoretical_scale_ue5": {"x": 7.0, "y": 7.0, "z": 7.0},
+    "suggested_collision_type": "Capsule",
+    "sprite_size": "2048x2048"
+  },
+  "combat_stats": {
+    "hp_max": 3,
+    "damage": 1,
+    "speed": 180.0,
+    "knockback_resistance": 0.8
+  },
+  "ai_behavior": {
+    "phases": 3,
+    "idle_time_ms": 1500,
+    "attack_cooldown_ms": 2500,
+    "attacks": [
+      {
+        "id": "shoot_obsidian",
+        "type": "projectile",
+        "speed": 250,
+        "windup_ms": 500
+      },
+      {
+        "id": "dash_stomp",
+        "type": "melee",
+        "speed": 500,
+        "windup_ms": 800
+      }
+    ]
+  },
+  "rewards": {
+    "xp_tonalli_base": 100,
+    "cacao_drop": 50,
+    "loot_item": "piedra_obsidiana"
+  }
+}
