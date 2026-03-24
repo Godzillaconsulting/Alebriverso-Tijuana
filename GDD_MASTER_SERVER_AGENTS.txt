@@ -1,0 +1,38 @@
+========================================================================
+ MASTER GAME DESIGN DOCUMENT (GDD) & LORE HANDOFF PARA IA (PC SERVIDOR)
+ PROYECTO: "TIJUANA: ALEBRIJE EN VACACIONES"
+========================================================================
+[ALERTA PARA EL NUEVO AGENTE]
+Este archivo contiene la Biblia de Arquitectura y Diseño para continuar y reconstruir el juego en cualquier motor local (Unreal Engine 5, Unity o el actual Phaser Híbrido WebGL).
+
+1. PREMISA Y LORE PRINCIPAL
+Protagonista: "Tijuana", un perro Xoloitzcuintle cósmico convertido en Alebrije (Piel de obsidiana viva, alas traseras de murciélago, y tatuajes tribales que emanan luz neón cian/rosa).
+Misión: Avanzar por portales temporales ("Piedras del Mictlán") para recolectar Cacao Dimensional.
+Mecánica Central: "El Mictlán" funge como Hub-World central donde el protagonista gasta Cacao, recupera Salud y abre los nidos (niveles) según el siglo en el que deba batallar.
+
+2. ARQUITECTURA TÉCNICA Y MECÁNICAS DE SUPER MARIO 64 AI
+Se emularon matemáticamente a detalle las físicas análogas puras utilizando el Objeto AlebrijeController, controlable mediante teclado o Inputs Digitales y equipado con Botón Acción/Z:
+ - Ground Pound (Pisotón Z): Presionar [Acción] en el aire bloquea la gravedad unos milisegundos para girar y desplomarse hiper-rápido, pulverizando o aturdiendo instantáneamente a cualquier enemigo en contacto cercano mediante Daño Radial Euclidiano y haciendo vibrar la Cámara (`Screen Shake`).
+ - Long Jump (Salto Largo): Al oprimir Z corriendo a velocidad mayor a +6U, se transiciona a 'Crouch' deslizable, multiplicar el salto en esta pequeña ventana despliega un envión físico enorme inercial por gran distancia.
+ - Spin Attack: Sin moverse en tierra oprime Atrtack/Z para desatar un trompo rotatorio tipo Crash Bandicoot.
+ - Juice Visual "Disney": Modificación a escala (Squash & Stretch), emitiendo partículas de polvo (Tetraedros volumétricos) a gran velocidad.
+
+3. CONSTRUCCIÓN DE ENTORNOS 
+ - Época 1 [Tenochtitlán (COMPLETADA)]: Tonalidad de geometría RetroWave y Void 3D estilo Nintendo 64. Plataformas flotantes que actúan como chinampas sobre vacío, tapizadas en Shaders Vórtice de pasto verdoso movido por el viento y Flores Tlaloc Cempasúchil flotando.
+ - Época 2 [La Conquista / La Noche Triste (SIGUIENTE META)]: Bosque oscuro denso y lluvioso. Zócalo terroso cubierto con metales rotos, iluminado por tormentas eléctricas. Ambiente tétrico.
+
+4. BESTIARIO NEURONAL (MÁQUINAS ESTADO FINITO)
+ - Serpiente de Piedra (Verde): Embestida directa estilo Slithering.
+ - Jaguar de Obsidiana: Leopardo macizo de espejo volcánico e incandescencias naranjas. Entra en Aggro al avistar al perro (se torna rojo) y congela inercia para embestir frontalmente un letal "Dash Inesquivable".
+ - Guerrero Águila. Levita sin inmutarse en lo alto del nivel en una animación sinusoidal en 'Y'. Al pasar por debajo el Alebrije clava un 'Dive Bomb' cayendo fulminante y recuperando el nido celestial.
+ - Shadow Clone (Entrenamiento tipo Redes NEAT): Espectral Anular holográfico programado en LevelScene. Memoriza todas las coordenadas de vector local a 60 cuadros y sigue ciegamente al Perro copiando sus saltos con demora de 1.1s. Castiga brutalmente causando paradojas de daño si son tocados entre ellos.
+
+5. BOSSES DE NIVEL Y JUGABILIDAD CINEMÁTICA
+ - Huitzilopochtli [COMPLETADO]: Un enorme Colibrí fisicoculturista forrado al vacío con escamas doradas y empuñando una gran espada tipo Buster de láser y filo obsidiana. Usa "Inteligencia Predictiva": calcula el Time To Impact de la inercia del Perro lanzando esferas Icosaédricas y no apuntando a él actualmente. Remata con transición final QTE (Sonríe al pajarito y Selfies de Victoria).
+ - Hernán Cortés "El Llorón" [EN PROYECTO]: Escena cinemática bajo un magro e hiperrealista árbol mojado, armadura española derruida en locura.
+
+6. ÓRDENES AL SIGUIENTE TERMINAL (Git Commits):
+Cuentas con las referencias de modelaje Blueprint (`Turnaround_Blueprints.md`), el arte procedural 3D, texturas mapeadas pre-horneadas, y el control completo actualizados. 
+
+¡Agente Servidor, haz uso de esta enciclopedia sagrada para tu instanciación base! Y finaliza la Obra de Arte llamada ALEBRIVERSO.
+========================================================================
