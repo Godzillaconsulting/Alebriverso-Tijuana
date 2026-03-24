@@ -317,10 +317,20 @@ class TitleScene extends Phaser.Scene {
   initThreeJSBackground() {
     const container = document.getElementById('three-container');
     if (!container) return;
+
+    // Mostrar el contenedor siempre (necesario si volvemos a TitleScene)
     container.style.display = 'block';
     container.style.opacity = '1';
 
-    if (window.threeRenderer) return;
+    // ─── GUARD: si el renderer ya existe, sólo re-conectamos y salimos ───
+    if (window.threeRenderer) {
+      // Asegurarse de que el canvas sigue en el DOM correcto
+      if (!container.contains(window.threeRenderer.domElement)) {
+        container.innerHTML = '';
+        container.appendChild(window.threeRenderer.domElement);
+      }
+      return;
+    }
 
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x0a0a1a, 0.02);
@@ -334,6 +344,8 @@ class TitleScene extends Phaser.Scene {
     renderer.setSize(rect.width, rect.height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
+    // Limpiar container antes de añadir canvas para evitar duplicados
+    container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
     window.threeRenderer = renderer;
