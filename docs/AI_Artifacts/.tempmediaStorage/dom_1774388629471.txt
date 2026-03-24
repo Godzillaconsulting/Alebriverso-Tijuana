@@ -1,0 +1,5 @@
+[ERROR] Uncaught SyntaxError: Unexpected token '.' en http://localhost:3001/js/engine/AlebrijeController.js:556:14
+[CONSOLE.ERROR] SyntaxError: Unexpected token '.'
+[ERROR] Uncaught ReferenceError: AlebrijeController is not defined en http://localhost:3001/js/engine/Game3D.js:34:31
+[CONSOLE.ERROR] ReferenceError: AlebrijeController is not defined
+[CONSOLE.ERROR] ReferenceError: AlebrijeController is not defined

@@ -1,0 +1,30 @@
+# Plan de Arquitectura: Boss Fight 3D (IA Predictiva tipo SM64)
+
+## Objetivo
+Implementar un combate de Jefe (Huitzilopochtli) 100% 3D en [BossScene.js](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/scenes/BossScene.js), utilizando el controlador [AlebrijeController](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/engine/AlebrijeController.js#4-266) de Tijuana y un nuevo sistema de **Inteligencia Artificial Predictiva y Sensorial** inspirado en bots de Super Mario 64, alineándonos con la decisión global de integrar Three.js directamente en las escenas de Phaser (como se hizo en [LevelScene.js](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/scenes/LevelScene.js)).
+
+## User Review Required
+
+> [!IMPORTANT]  
+> En vista de los últimos cambios de otros agentes ([tmp_fix.js](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/tmp_fix.js)), [LevelScene](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/scenes/LevelScene.js#1-136) ya fue portado a puramente 3D. Tu [BossScene.js](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/scenes/BossScene.js) actual quedó obsoleta/truncada. 
+> Solicito permiso para reescribir [BossScene.js](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/scenes/BossScene.js) desde cero para convertirla en una Arena 3D circular (estilo Bowser in the Dark World). ¿Apruebas que reemplace todo [BossScene](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/scenes/BossScene.js#2-268) con la nueva lógica webGL / Three.js?
+
+## Proposed Changes
+
+### 1. La Arena 3D (BossScene.js)
+#### [MODIFY] [BossScene.js](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/scenes/BossScene.js)
+- Replicar la inyección nativa de `THREE.Scene`, luces y cámara.
+- Crear un entorno de "Arena Cilíndrica" (Ring de obsidiana flotante).
+- Inicializar a Tijuana ([AlebrijeController](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/engine/AlebrijeController.js#4-266)) y al Jefe (`EnemyManager.createEnemy('huitzilopochtli')`).
+
+### 2. Raycasting y Máquina de Estados (Boss AI)
+- **Fase 1: Raycast Tracker:** Huitzilopochtli usará `THREE.Raycaster` apuntando hacia abajo para "escanear" la arena. 
+- **Fase 2: Predicción Orbital:** En lugar de perseguir ciegamente a Tijuana de frente, el jefe calculará un vector anticipado multiplicando `alebrije.velocity` y se colocará en esa posición para lanzar Pilares láser.
+- Si el Raycast detecta a Tijuana debajo de él, activará el **Dive Bomb (Pisotón)** inesquivable a menos que el jugador haga un "Just-Frame Dash".
+
+### 3. Físicas de Impacto (Colisiones Nativas)
+- Como Huitzilopochtli es un *Mesh* en [EnemyManager](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/engine/EnemyManager.js#5-131), programaremos un chequeo euclidiano `.distanceTo` entre `alebrije.playerGroup` y el Jefe en el [update()](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/scenes/MictlanHubScene.js#140-157) de [BossScene.js](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/scenes/BossScene.js) para registrar daño.
+
+---
+
+Por favor asiente o comenta este documento si apruebas el despido del 2D procedural en el combate del Jefe y la inserción de esta IA sensorial.

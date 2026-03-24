@@ -1,0 +1,18 @@
+# Operación Pulido - Época 1 (Tenochtitlán)
+
+## Tareas de Refinamiento
+- [x] **1. Inteligencia Artificial (Enemigos 3D Híbridos)**
+  - [x] Máquina de Estados Físicos inyectada a la Scene Principal.
+  - [x] Dash (Embestida), Patrullaje y Dive-Bombs del guerrero restituidos.
+  - [x] Reactividad lumínica al detectar al jugador (Flashes Neón Rojos).
+- [x] **2. Combate de Jefe (Overhaul SM64)**
+  - [x] Implementar Input Predictivo con lectura de inercia y colisión matemática.
+  - [x] Habilidades Dinámicas ("Dive Bomb" Pisotón si el jugador entra a la Hitbox Vertical Inferior).
+  - [x] "Screen Shake" con anillos visuales de Daño Físico Radial (Ondas).
+- [x] **3. 'Juice' del Start/Jugador**
+  - [x] Partículas y Squash/Stretch de Tijuana.
+- [ ] **4. Referencias Ortogonales (3D Modeling Sheets)**
+  - [ ] Tijuana (Alebrije) Turnaround.
+  - [ ] Huitzilopochtli (Boss) Turnaround.
+  - [ ] Guerrero Águila Turnaround.
+  - [ ] Jaguar de Obsidiana Turnaround.

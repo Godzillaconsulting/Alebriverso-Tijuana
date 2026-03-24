@@ -1,0 +1,40 @@
+# Plan de Integración de Assets 3D (Sincronización de Agentes)
+
+Este plan detalla cómo sincronizaremos el trabajo del **AGENTE_OPTIMIZADOR** y **AGENTE_ESCENA** para inyectar los nuevos assets Retro 3D en tu lógica actual de Three.js (dentro de [Epoca1Scene.js](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/scenes/Epoca1Scene.js)).
+
+## User Review Required
+
+> [!IMPORTANT]  
+> Dado que estamos integrando Renders 2D extraídos por IA para ser usados como obstáculos/enemigos en un mundo 3D matemático, utilizaremos una técnica de **Billboarding** (Planos 3D que siempre miran a la cámara) con físicas independientes. Por favor, confirma si este enfoque encaja con la visión del Gameplay.
+
+## Proposed Changes
+
+### [js/engine/EnemyManager.js]
+
+#### [NEW] [EnemyManager.js](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/engine/EnemyManager.js)
+Crearemos una nueva clase que funcionará como Factory y Gestor de los enemigos generados por IA. 
+**Responsabilidades (Agente Escena):**
+- Cargar las texturas `serpiente_piedra.png`, `jaguar_obsidiana.png` y `huitzilopochtli.png`.
+- Crear un `THREE.MeshStandardMaterial` con `transparent: true` y `alphaTest: 0.5`.
+- Aplicar un color emisivo (`emissive: 0x00ffff`, `emissiveIntensity: 0.8`) según las especificaciones del JSON para el efecto Neón de la espada, runas de obsidiana, etc.
+
+**Responsabilidades (Agente Optimizador):**
+- Generar mallas invisibles de colisión (Hitboxes):
+  - **CapsuleGeometry** para Serpiente y Huitzilopochtli.
+  - **BoxGeometry** para el Jaguar de Obsidiana.
+- Añadir estas cajas invisibles a un arreglo global `enemyHitboxes` para que [AlebrijeController](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/engine/AlebrijeController.js#4-256) resuelva las colisiones / ataques.
+
+### [js/scenes/Epoca1Scene.js]
+
+#### [MODIFY] [Epoca1Scene.js](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/scenes/Epoca1Scene.js)
+- Importar y usar `EnemyManager.js`.
+- Actualizar el bucle [update()](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/scenes/Epoca1Scene.js#167-202) para que los Billboards gráficos (Sprites) siempre miren a la cámara.
+- Inyectar la textura generada de la **Arquitectura de Tenochtitlán** aplicando `.wrapS = .wrapT = THREE.RepeatWrapping` en el puente/pirámide.
+
+## Verification Plan
+
+### Manual Verification
+1. Abrirás el link de localhost en el navegador.
+2. Caminarás con el personaje hacia los Chinampas generados.
+3. Deberás observar a los enemigos con recorte perfecto (fondo invisible) y acentos de color neon brillantes (Glow).
+4. Al intentar caminar a través de ellos, las colisiones invisibles (Capsule/Box) detendrán tu movimiento mediante la rutina existente en [AlebrijeController](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/engine/AlebrijeController.js#4-256).

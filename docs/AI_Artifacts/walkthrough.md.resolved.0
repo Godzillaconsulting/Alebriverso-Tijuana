@@ -1,0 +1,17 @@
+# 🌺 Showcase Gráfico Época 1 (Tenochtitlán)
+
+Estos son los **Renders Originales** que generó la deidad de la IA bajo el estilo de *"Nintendo 64 / Retro 3D HD"*. Estos archivos fueron los que se enviaron a tu directorio `assets/raw`, luego se procesaron por el Script de Python para arrancarles el fondo y ahora figuran en su gloria como Sprites con *Alpha Mask* dentro del juego.
+
+Abre el carrusel de abajo para contemplar la dirección de arte que le dimos a tu Alebriverso:
+
+````carousel
+![Protagonista: Tijuana el Alebrije (Riñonera + Lentes)](C:\Users\JareG\.gemini\antigravity\brain\bc6a9624-973c-405f-ba30-c27623860e36\tijuana_alebrije_1774383940786.png)
+<!-- slide -->
+![Jefe Final: Huitzilopochtli "El Colibrí Zurdo" (Macuahuitl Neón)](C:\Users\JareG\.gemini\antigravity\brain\bc6a9624-973c-405f-ba30-c27623860e36\huitzilo_boss_render_1774385882827.png)
+<!-- slide -->
+![Enemigo Aerotransportado: Guerrero Águila](C:\Users\JareG\.gemini\antigravity\brain\bc6a9624-973c-405f-ba30-c27623860e36\guerrero_aguila_render_1774385899434.png)
+<!-- slide -->
+![NPC de Reparto: Aldeano Azteca (Para el Mictlán o Tiendas)](C:\Users\JareG\.gemini\antigravity\brain\bc6a9624-973c-405f-ba30-c27623860e36\aldeano_azteca_render_1774385914318.png)
+````
+
+Asegúrate de darles *click* para agrandarlos. Como notarás, sus polígonos afilados, colores neón (*Turquesa y Magenta* especialmente) y materiales emisivos se alinean exactamente con el guión que armamos para el motor web/Unreal.

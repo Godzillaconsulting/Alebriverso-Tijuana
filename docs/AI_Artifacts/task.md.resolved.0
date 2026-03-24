@@ -1,0 +1,14 @@
+# Generación de Assets: Retro 3D HD (Azteca)
+
+## Tareas Principales
+- [/] Generar Textura Arquitectura de Tenochtitlán (Prompt 4)
+- [ ] Post-Procesar Rendéres de Personajes (Eliminar fondo blanco, Upscale a 2K, generar .PNG con Alpha)
+  - [ ] Serpiente de Piedra
+  - [ ] Huitzilopochtli
+  - [ ] Jaguar de Obsidiana
+- [/] Generar Metadatos .json (Escala, Colisión, etc.) para cada asset
+  - [/] Serpiente de Piedra
+  - [/] Huitzilopochtli
+  - [/] Jaguar de Obsidiana
+  - [/] Textura Tenochtitlán
+- [ ] Entregar y consultar con AGENTE_OPTIMIZADOR y AGENTE_ESCENA

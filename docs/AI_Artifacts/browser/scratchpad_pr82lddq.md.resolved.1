@@ -1,0 +1,15 @@
+# Task: Test "TIJUANA: Alebrije en Vacaciones"
+
+## Plan
+- [x] Navigate to http://localhost:3001/
+- [x] Start the game (ENTER or 'JUGAR')
+- [x] Wait for 3D scene to load (Started despite errors!)
+- [ ] Move with WASD, jump with SPACE, attack with Z
+- [ ] Play for 30 seconds, observing enemies (Jaguar, Eagle, Snake) and Shadow Clone
+- [ ] Return summary of findings
+
+## Findings
+- JavaScript errors detected: `SyntaxError: Unexpected token '.'` in `AlebrijeController.js:556`.
+- `ReferenceError: AlebrijeController is not defined`.
+- Despite errors, the game transitions to a 3D scene with a pink capsule character.
+- The 3D scene shows procedural fallbacks since GLTF models are missing (404).

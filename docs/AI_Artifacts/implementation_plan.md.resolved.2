@@ -1,0 +1,30 @@
+# Finalización de la Época 1 (Tenochtitlán) al 100%
+
+## Objetivo
+El usuario ha solicitado cerrar todos los pendientes técnicos y visuales de la Época 1 en el motor (Three.js/Phaser). Tras revisar los últimos commits (incluyendo `Guerrero_Aguila.json` y la nueva [BossScene.js](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/scenes/BossScene.js)), este es el plan para unificar el juego bajo la estética **Retro 3D**.
+
+## User Review Required
+
+> [!IMPORTANT]  
+> Tu [BossScene.js](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/scenes/BossScene.js) actual está estructurado como un combate de plataformas 2D (Físicas laterales de Phaser). Como decidimos "erradicar el 2D", mi plan propone convertir la Arena del Jefe a un cuadrilátero 3D (Estilo Super Mario 64) usando tu [AlebrijeController](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/engine/AlebrijeController.js#4-266) y el [EnemyManager](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/engine/EnemyManager.js#5-111), inyectando la Inteligencia artificial de los Barridos y Pilares de energía. ¿Apruebas que convierta la escena del jefe a 100% 3D?
+
+## Proposed Changes
+
+### 1. Activos Visuales (Generación IA y Post-Procesamiento)
+- **Huitzilopochtli:** Generar el Sprite 3D HD del Colibrí Jefe. (Para la BossScene)
+- **Guerrero Águila:** Generar el Sprite 3D del enemigo recién definido.
+
+### 2. Integración de Enemigos Extras [js/engine/EnemyManager.js]
+#### [MODIFY] [EnemyManager.js](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/engine/EnemyManager.js)
+- Agregar el case `guerrero_aguila` en el Factory con su hitbox (Capsule) y emisivo (Neon Yellow).
+
+### 3. Entorno de Nivel [js/scenes/LevelScene.js]
+#### [MODIFY] [LevelScene.js](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/scenes/LevelScene.js)
+- Inyectar las instancias `this.enemyManager.createEnemy('guerrero_aguila', ...)` distribuidas a lo largo del sendero de las Chinampas para poblar el nivel.
+
+### 4. BossFight Transición a 3D [js/scenes/BossScene.js]
+#### [MODIFY] [BossScene.js](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/scenes/BossScene.js)
+- Borrar las físicas 2D laterales (Arcade Physics).
+- Inicializar [AlebrijeController](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/engine/AlebrijeController.js#4-266) en una plataforma cuadrada grande flotando en el vacío.
+- Agregar un controlador específico para el jefe 3D (Huitzilopochtli disparando proyectiles Billboards hacia la cámara).
+- Respetar la lógica del UI (QTE de la Selfie al derrotarlo y la transición al Mictlán).

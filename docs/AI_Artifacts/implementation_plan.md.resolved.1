@@ -1,0 +1,32 @@
+# Plan de Migración Total a 3D (Asset Principal: Tijuana)
+
+## Objetivo
+El usuario indicó que "en 2D no llama nada la atención" referenciándose a la captura de pantalla de la [TitleScene](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/scenes/TitleScene.js#4-396) donde el personaje protagónico es un dibujo vectorial 2D (código procedural) y en el gameplay todavía es un "Cilindro/Cápsula" genérica rosa. 
+
+Para resolver esto y unificar el juego bajo la estética **Retro 3D HD**, ejecutaremos el siguiente plan:
+
+## User Review Required
+
+> [!IMPORTANT]  
+> Voy a generar mediante IA a **Tijuana el Alebrije** (Iguana rosa con lentes y riñonera) en 3D bajo el mismo estilo que los jefes (Super Mario 64 moderno). ¿Estás de acuerdo con el estilo visual para el protagonista?
+
+## Proposed Changes
+
+### 1. Generación y Pre-Procesamiento del Protagonista
+- Generar la textura del personaje con Mid-Poly Retro 3D.
+- Extraer fondo, aplicar Alpha Mask, y subir a `assets/sprites/tijuana.png`.
+
+### [js/engine/AlebrijeController.js]
+#### [MODIFY] [AlebrijeController.js](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/engine/AlebrijeController.js)
+- Reemplazar el `CapsuleGeometry` (Placeholder) por un `THREE.Sprite` que apunte al nuevo `tijuana.png`.
+- Asegurar que el Billboarding funcione con el Lakitu Camera. Mantendremos el cilindro original únicamente como Hitbox físico invisible.
+
+### [js/scenes/TitleScene.js]
+#### [MODIFY] [TitleScene.js](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/scenes/TitleScene.js)
+- Eliminar el dibujo 2D procedural [drawTijuana](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/scenes/TitleScene.js#85-194) y las pirámides planas.
+- Instanciar el Sprite 3D del Alebrije en el [initThreeJSBackground()](file:///d:/Proyecos%20IA/Jaky%7D/ALEBRIVERSO/js/scenes/TitleScene.js#282-382) para que flote e interactúe con el entorno 3D que ya estaba girando de fondo.
+
+## Verification Plan
+
+### Manual Verification
+Al abrir la pantalla de Título, el Alebrije será un render 3D de alta calidad flotando. Al dar "Play", jugarás controlando a ese Sprite 3D (como Doom o Mario Kart 64) en lugar de una cápsula morada de programación de prueba.

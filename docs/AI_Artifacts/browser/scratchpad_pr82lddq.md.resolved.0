@@ -1,0 +1,9 @@
+# Task: Test "TIJUANA: Alebrije en Vacaciones"
+
+## Plan
+- [ ] Navigate to http://localhost:3001/
+- [ ] Start the game (ENTER or 'JUGAR')
+- [ ] Wait for 3D scene to load
+- [ ] Move with WASD, jump with SPACE, attack with Z
+- [ ] Play for 30 seconds, observing enemies (Jaguar, Eagle, Snake) and Shadow Clone
+- [ ] Return summary of findings

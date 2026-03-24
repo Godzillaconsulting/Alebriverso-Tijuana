@@ -1,0 +1,13 @@
+# Operación Pulido - Época 1 (Tenochtitlán)
+
+## Tareas de Refinamiento
+- [ ] **1. Inteligencia Artificial (Enemigos Base)**
+  - [ ] Implementar Aggro Radius (Radio de Visión).
+  - [ ] Añadir Embestida Terrestre (Jaguar de Obsidiana).
+  - [ ] Añadir Vuelo en Picada (Guerrero Águila).
+  - [ ] Expresiones de interjección ("!") al detectar al jugador.
+- [ ] **2. Combate de Jefe (Overhaul)**
+  - [ ] Añadir ataque de Barrido y Pilares de Energía.
+  - [ ] "Screen Shake" constante.
+- [ ] **3. 'Juice' del Start/Jugador**
+  - [ ] Partículas y Squash/Stretch de Tijuana.
