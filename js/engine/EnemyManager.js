@@ -61,8 +61,146 @@ class EnemyManager {
                     scale: new THREE.Vector3(2.0, 2.0, 2.0),
                     hitboxSize: new THREE.Vector3(1, 2.0, 1),
                     hitboxType: 'capsule',
-                    emissiveColor: 0x995522, // Tono tierra sutil
+                    emissiveColor: 0x995522,
                     emissiveIntensity: 0.2
+                };
+                break;
+
+            // ===== ÉPOCA 3: NUEVA ESPAÑA =====
+            case 'fraile_antorcha':
+                config = {
+                    texture: 'assets/sprites/fraile_antorcha.png',
+                    scale: new THREE.Vector3(2.2, 2.2, 2.2),
+                    hitboxSize: new THREE.Vector3(1, 2.2, 1),
+                    hitboxType: 'capsule',
+                    emissiveColor: 0xff6600, // Naranja antorcha
+                    emissiveIntensity: 0.9
+                };
+                break;
+            case 'guardia_virreinal':
+                config = {
+                    texture: 'assets/sprites/guardia_virreinal.png',
+                    scale: new THREE.Vector3(2.4, 2.4, 2.4),
+                    hitboxSize: new THREE.Vector3(1.2, 2.4, 1.2),
+                    hitboxType: 'capsule',
+                    emissiveColor: 0xaaaaaa, // Plateado armadura
+                    emissiveIntensity: 0.5
+                };
+                break;
+            case 'inquisidor':
+                config = {
+                    texture: 'assets/sprites/inquisidor.png',
+                    scale: new THREE.Vector3(2.5, 2.5, 2.5),
+                    hitboxSize: new THREE.Vector3(1.2, 2.5, 1.2),
+                    hitboxType: 'capsule',
+                    emissiveColor: 0x330033, // Púrpura oscuro inquisición
+                    emissiveIntensity: 0.7
+                };
+                break;
+            case 'virrey_pomposo':
+                config = {
+                    texture: 'assets/sprites/virrey_pomposo.png',
+                    scale: new THREE.Vector3(6.0, 6.0, 6.0), // Boss grande
+                    hitboxSize: new THREE.Vector3(2.5, 6, 2.5),
+                    hitboxType: 'capsule',
+                    emissiveColor: 0xdd2255, // Carmesí virreinal
+                    emissiveIntensity: 1.0
+                };
+                break;
+
+            // ===== ÉPOCA 4: INDEPENDENCIA =====
+            case 'soldado_realista':
+                config = {
+                    texture: 'assets/sprites/soldado_realista.png',
+                    scale: new THREE.Vector3(2.2, 2.2, 2.2),
+                    hitboxSize: new THREE.Vector3(1, 2.2, 1),
+                    hitboxType: 'capsule',
+                    emissiveColor: 0x1144cc, // Azul uniforme realista
+                    emissiveIntensity: 0.6
+                };
+                break;
+            case 'canon_vivo':
+                config = {
+                    texture: 'assets/sprites/canon_vivo.png',
+                    scale: new THREE.Vector3(4.0, 3.0, 4.0),
+                    hitboxSize: new THREE.Vector3(2, 3, 3),
+                    hitboxType: 'box',
+                    emissiveColor: 0xff4400, // Fuego cañón
+                    emissiveIntensity: 1.1
+                };
+                break;
+            case 'hidra_realista':
+                config = {
+                    texture: 'assets/sprites/hidra_realista.png',
+                    scale: new THREE.Vector3(7.0, 7.0, 7.0), // Boss
+                    hitboxSize: new THREE.Vector3(3.5, 7, 3.5),
+                    hitboxType: 'capsule',
+                    emissiveColor: 0x00ccff, // Cyan hidra
+                    emissiveIntensity: 1.2
+                };
+                break;
+
+            // ===== ÉPOCA 5: PORFIRIATO =====
+            case 'rural_sombrero':
+                config = {
+                    texture: 'assets/sprites/rural_sombrero.png',
+                    scale: new THREE.Vector3(2.3, 2.3, 2.3),
+                    hitboxSize: new THREE.Vector3(1.1, 2.3, 1.1),
+                    hitboxType: 'capsule',
+                    emissiveColor: 0x886644, // Cuero/tierra
+                    emissiveIntensity: 0.4
+                };
+                break;
+            case 'maquina_vapor':
+                config = {
+                    texture: 'assets/sprites/maquina_vapor.png',
+                    scale: new THREE.Vector3(5.0, 4.0, 5.0),
+                    hitboxSize: new THREE.Vector3(2.5, 4, 4),
+                    hitboxType: 'box',
+                    emissiveColor: 0xff2200, // Horno rojo vivo
+                    emissiveIntensity: 1.3
+                };
+                break;
+            case 'general_maquina':
+                config = {
+                    texture: 'assets/sprites/general_maquina.png',
+                    scale: new THREE.Vector3(7.0, 7.0, 7.0), // Boss
+                    hitboxSize: new THREE.Vector3(3.5, 7, 3.5),
+                    hitboxType: 'capsule',
+                    emissiveColor: 0xffaa00, // Latón/dorado porfiriano
+                    emissiveIntensity: 1.2
+                };
+                break;
+
+            // ===== ÉPOCA 6: REVOLUCIÓN =====
+            case 'federal_pelon':
+                config = {
+                    texture: 'assets/sprites/federal_pelon.png',
+                    scale: new THREE.Vector3(2.2, 2.2, 2.2),
+                    hitboxSize: new THREE.Vector3(1, 2.2, 1),
+                    hitboxType: 'capsule',
+                    emissiveColor: 0x667722, // Caqui militar
+                    emissiveIntensity: 0.4
+                };
+                break;
+            case 'federales_canon':
+                config = {
+                    texture: 'assets/sprites/federales_canon.png',
+                    scale: new THREE.Vector3(4.5, 3.5, 4.5),
+                    hitboxSize: new THREE.Vector3(2.2, 3.5, 3.5),
+                    hitboxType: 'box',
+                    emissiveColor: 0xdd3300, // Explosión artillería
+                    emissiveIntensity: 1.0
+                };
+                break;
+            case 'usurpador_gordo':
+                config = {
+                    texture: 'assets/sprites/usurpador_gordo.png',
+                    scale: new THREE.Vector3(8.0, 8.0, 8.0), // Boss final
+                    hitboxSize: new THREE.Vector3(4, 8, 4),
+                    hitboxType: 'capsule',
+                    emissiveColor: 0xffd700, // Medalla de hojalata dorada
+                    emissiveIntensity: 1.4
                 };
                 break;
         }
@@ -193,7 +331,9 @@ class EnemyManager {
             const target = new THREE.Vector3(camera.position.x, enemy.sprite.position.y, camera.position.z);
             enemy.sprite.lookAt(target);
             
-            if (enemy.type === 'aldeano_azteca' || enemy.type === 'huitzilopochtli') continue; // Boss en arena propia, NPC pasivo
+            // Bosses y NPCs pasivos – no entran en el FSM de persecución
+            const PASSIVE_TYPES = ['aldeano_azteca','huitzilopochtli','virrey_pomposo','hidra_realista','general_maquina','usurpador_gordo','canon_vivo','federales_canon','maquina_vapor'];
+            if (PASSIVE_TYPES.includes(enemy.type)) continue;
             
             // 2. Inteligencia Artificial (Euclidiana Vectorial 3D)
             const dist = new THREE.Vector3(enemy.sprite.position.x, 0, enemy.sprite.position.z)

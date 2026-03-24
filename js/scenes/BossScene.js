@@ -206,6 +206,7 @@ class BossScene extends Phaser.Scene {
       pMesh.userData.velocity = dir.multiplyScalar(projSpeed);
       this.threeScene.add(pMesh);
       this.proyectiles3D.push(pMesh);
+      if (window.Jukebox) window.Jukebox.sfxProjectile(); // 🔊 SFX proyectil
   }
 
   _triggerShockwave() {
@@ -241,6 +242,7 @@ class BossScene extends Phaser.Scene {
           this.bossHp -= 1.0;
           this.tweens.add({ targets: this.bossHpBar, width: 200 * (this.bossHp/this.maxBossHp), duration: 200 });
           this.bossEnemy.sprite.material.emissiveIntensity = 5.0; 
+          if (window.Jukebox) window.Jukebox.sfxBossHit(); // 🔊 SFX golpe boss
           this.time.delayedCall(200, () => { if(this.bossEnemy) this.bossEnemy.sprite.material.emissiveIntensity = 0.8; });
           
           this.alebrije.velocity.set(0, 15, 15);
@@ -263,6 +265,7 @@ class BossScene extends Phaser.Scene {
       this.vida--; window.GameState.vida = this.vida;
       this.scene.get('UIScene')?.updateVida(this.vida, window.GameState.vidaMax || 3);
       this.cameras.main.shake(200, 0.015);
+      if (window.Jukebox) window.Jukebox.sfxDamage(); // 🔊 SFX daño
       if (this.vida <= 0) {
           this.scene.pause(); this.cameras.main.fadeOut(600, 0, 0, 0);
           this.time.delayedCall(700, () => { window.GameState.vida = window.GameState.vidaMax || 3; this.scene.restart(); });
@@ -273,7 +276,8 @@ class BossScene extends Phaser.Scene {
     this.bossState = 'dead';
     this.tweens.killTweensOf(this.bossHpBar);
     this.bossEnemy.sprite.position.y = 0.5;
-    this.bossEnemy.sprite.scale.set(this.bossEnemy.sprite.scale.x, 0.2, this.bossEnemy.sprite.scale.z); // Aplastado
+    this.bossEnemy.sprite.scale.set(this.bossEnemy.sprite.scale.x, 0.2, this.bossEnemy.sprite.scale.z);
+    if (window.Jukebox) { window.Jukebox.stop(); window.Jukebox.sfxVictory(); } // 🔊 Fanfarria victoria
     this.time.delayedCall(1500, () => this._showSelfieQTE());
   }
 
@@ -284,6 +288,7 @@ class BossScene extends Phaser.Scene {
     this.time.delayedCall(2000, () => {
       const flash = this.add.rectangle(W/2, H/2, W, H, 0xffffff, 1).setScrollFactor(0);
       this.cameras.main.shake(100, 0.01);
+      if (window.Jukebox) window.Jukebox.sfxSelfie(); // 🔊 Clic de cámara
       this.time.delayedCall(100, () => {
         flash.setAlpha(0); dialog.destroy();
         this.add.text(W/2, H/2, `¡PIEDRA DE ${this.epocaData.piedra.toUpperCase()} GANADA!`, { fontFamily: 'Bebas Neue', fontSize: '42px', color: '#ffd700', shadow: { offsetX: 0, offsetY: 4, color: '#ff3fa4', blur: 10, fill: true } }).setOrigin(0.5);

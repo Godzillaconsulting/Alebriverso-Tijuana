@@ -9,6 +9,10 @@ class LevelScene extends Phaser.Scene {
   create() {
     const W = this.scale.width; const H = this.scale.height;
     this.cameras.main.fadeIn(600);
+
+    // 🎵 Música por época (Web Audio API procedural)
+    if (window.Jukebox) window.Jukebox.playTrack('level_base', this.epocaId);
+
     this.scene.launch('UIScene');
     this.scene.get('UIScene').updateVida(this.vida, window.GameState.vidaMax || 3);
     this.scene.get('UIScene').updateEpoca(this.epocaData.nombre);
@@ -159,7 +163,10 @@ class LevelScene extends Phaser.Scene {
 
     const jump = Phaser.Input.Keyboard.JustDown(this.cursors.space) || this.mobileJump;
     if (this.mobileJump) this.mobileJump = false;
-    const action = this.mobileAttack; // Solo botón UI móvil por ahora
+    const action = this.mobileAttack;
+
+    // 🔊 SFX Salto
+    if (jump && window.Jukebox) window.Jukebox.sfxJump();
 
     this.alebrije.setInput(x, y, jump, action);
     this.alebrije.update(delta / 1000);
@@ -186,7 +193,8 @@ class LevelScene extends Phaser.Scene {
                     window.GameState.cacao = (window.GameState.cacao || 0) + 15;
                     this.scene.get('UIScene')?.updateCacao(window.GameState.cacao);
                     this.cameras.main.shake(150, 0.015);
-                    this.alebrije._spawnDustParticles(en.sprite.position, 8); // Explosión de polvo
+                    if (window.Jukebox) window.Jukebox.sfxAttack(); // 🔊 SFX golpe
+                    this.alebrije._spawnDustParticles(en.sprite.position, 8);
                 }
             }
         }
@@ -218,6 +226,7 @@ class LevelScene extends Phaser.Scene {
                      this.EnemyMan.enemies.splice(i, 1);
                      window.GameState.cacao += 10;
                      this.scene.get('UIScene')?.updateCacao(window.GameState.cacao);
+                     if (window.Jukebox) window.Jukebox.sfxAttack(); // 🔊 SFX golpe
                      
                      // Pequeño rebotillo a lo Mario al pisar
                      if (this.alebrije.state === 'GROUND_POUND_DROP') this.alebrije.velocity.y = 15;
@@ -241,6 +250,7 @@ class LevelScene extends Phaser.Scene {
         if(this.alebrije.playerGroup.position.distanceTo(c.position) < 2.0) {
             this.threeScene.remove(c); this.cacaos3D.splice(i, 1);
             window.GameState.cacao += 5; this.scene.get('UIScene')?.updateCacao(window.GameState.cacao);
+            if (window.Jukebox) window.Jukebox.sfxCollect(); // 🔊 SFX colección
         }
     }
 
@@ -281,6 +291,7 @@ class LevelScene extends Phaser.Scene {
     window.GameState.vida -= 1;
     this.scene.get('UIScene')?.updateVida(window.GameState.vida, window.GameState.vidaMax || 3);
     this.cameras.main.shake(200, 0.015);
+    if (window.Jukebox) window.Jukebox.sfxDamage(); // 🔊 SFX daño
     this.alebrije.playerGroup.position.set(0, 5, 0); this.alebrije.velocity.set(0, 0, 0);
     if (window.GameState.vida <= 0) {
       this.scene.pause(); this.cameras.main.fadeOut(600, 0, 0, 0);

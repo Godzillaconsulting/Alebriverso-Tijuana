@@ -173,6 +173,7 @@ class MictlanHubScene extends Phaser.Scene {
       hit.on('pointerout',  () => { g.clear(); g.fillStyle(col,.9); g.fillRoundedRect(x-170,y-40,340,80,14); g.lineStyle(2,bc,1); g.strokeRoundedRect(x-170,y-40,340,80,14); });
       hit.on('pointerdown', () => {
         this.cameras.main.shake(150, 0.006);
+        if (window.Jukebox) { window.Jukebox.stop(); window.Jukebox.sfxSelect(); }
         this.cameras.main.fadeOut(500, 0, 0, 0);
         this.time.delayedCall(550, () => { window.GameState.epocaActual = ep.num; this.scene.start('LevelScene', { epocaId: ep.num }); });
       });

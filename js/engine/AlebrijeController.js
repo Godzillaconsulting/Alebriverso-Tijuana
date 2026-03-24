@@ -29,16 +29,21 @@ class AlebrijeController {
         this.playerGroup.position.set(0, 5, 5); // Empezar un poco arriba y atrás
         this.scene.add(this.playerGroup);
         
-        // Mesh Placeholder (Cápsula de colisión visible por defecto)
-        const geometry = typeof THREE.CapsuleGeometry !== 'undefined' 
-            ? new THREE.CapsuleGeometry(0.5, 1, 4, 8) 
-            : new THREE.CylinderGeometry(0.5, 0.5, 2, 16);
-        const material = new THREE.MeshStandardMaterial({ color: 0xff3fa4, wireframe: false });
+        // Hitbox invisible (solo para lógica de colisión / debug)
+        const geometry = new THREE.CylinderGeometry(0.5, 0.5, 2, 8);
+        const material = new THREE.MeshBasicMaterial({ visible: false });
         this.mesh = new THREE.Mesh(geometry, material);
         this.mesh.position.y = 1;
-        this.mesh.castShadow = true;
-        this.mesh.receiveShadow = true;
         this.playerGroup.add(this.mesh);
+
+        // ── Malla Procedural 3D del Personaje ──
+        this.proceduralMesh = (typeof buildProceduralAlebrije === 'function')
+            ? buildProceduralAlebrije()
+            : null;
+        if (this.proceduralMesh) {
+            this.playerGroup.add(this.proceduralMesh);
+        }
+        this._elapsedTime = 0; // Para animaciones procedurales
 
         // --- SISTEMA DE ANIMACIÓN 3D (GLTF) ---
         this.mixer = null;
@@ -91,7 +96,9 @@ class AlebrijeController {
             });
 
             this.playerGroup.add(model);
-            this.mesh.visible = false; // Ocultar cápsula de debug
+            this.mesh.visible = false; // Ocultar hitbox de debug
+            // Ocultar malla procedural — el GLB ya cubre la visual
+            if (this.proceduralMesh) this.proceduralMesh.visible = false;
             this.modelLoaded = true;
             this.gltfModel = model;
 
@@ -138,6 +145,19 @@ class AlebrijeController {
         if (!this.targetScale) this.targetScale = new THREE.Vector3(1,1,1);
         this.playerGroup.scale.lerp(this.targetScale, 15 * delta);
         this._updateCombatAndEffects(delta);
+        this._elapsedTime = (this._elapsedTime || 0) + delta;
+
+        // ── Animaciones de la malla procedural (solo si no hay GLB) ──
+        if (this.proceduralMesh && this.proceduralMesh.visible) {
+            const t = this._elapsedTime;
+            const speedNorm = Math.min(this.currentForwardSpeed / this.maxWalkSpeed, 1.0);
+            if (speedNorm > 0.08) {
+                this.proceduralMesh.updateRun && this.proceduralMesh.updateRun(speedNorm, t);
+            } else {
+                this.proceduralMesh.resetAnimations && this.proceduralMesh.resetAnimations();
+                this.proceduralMesh.updateIdle && this.proceduralMesh.updateIdle(t);
+            }
+        }
 
         const inputMag = Math.min(this.inputVector.length(), 1.0);
         const actionJustPressed = this.actionPressed && !this.wasActionPressed;

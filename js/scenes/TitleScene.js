@@ -75,6 +75,7 @@ class TitleScene extends Phaser.Scene {
 
     // ── Botón JUGAR ──
     this.createBoton(W / 2, H * 0.89, '▶  JUGAR', () => {
+      if (window.Jukebox) { window.Jukebox.stop(); window.Jukebox.sfxSelect(); }
       this.cameras.main.fadeOut(600, 0, 0, 0);
       const threeCont = document.getElementById('three-container');
       if (threeCont) {
