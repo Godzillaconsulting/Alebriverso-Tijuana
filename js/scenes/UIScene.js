@@ -49,6 +49,12 @@ class UIScene extends Phaser.Scene {
       this.updateTonalli(window.GameState.tonalli);
       this.updateVida(window.GameState.vida, window.GameState.vidaMax);
     });
+
+    // Escucha eventos del Motor 3D (GameManager nativo Vanilla JS)
+    window.addEventListener('alebrije-collect-obsidian', (e) => {
+      window.GameState.tonalli += 1;
+      this.updateTonalli(window.GameState.tonalli);
+    });
   }
 
   updateVida(current, max) {

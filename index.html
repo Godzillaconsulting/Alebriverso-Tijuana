@@ -1,61 +1,44 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>TIJUANA: Alebrije en Vacaciones</title>
-  <meta name="description" content="RPG de plataformas mexicano. Tijuana el Alebrije viaja por 6 épocas de la historia de México para llegar a Cancún." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@400;700;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css" />
-  <!-- Librería WebGL 3D -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.140.0/build/three.min.js"></script>
-  <!-- Controles de Cámara -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.140.0/examples/js/controls/OrbitControls.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.140.0/examples/js/loaders/GLTFLoader.js"></script>
+    <meta charset="UTF-8">
+    <title>The Tijuana Project - Render PS2 Pipeline</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+          "three/examples/jsm/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        #overlay {
+            position: absolute; top:0; left:0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); color: white;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        button { 
+            padding: 15px 30px; font-size: 20px; cursor: pointer; 
+            border: 2px solid white; background: #222; color: white;
+            transition: background 0.3s;
+        }
+        button:hover { background: #555; }
+    </style>
 </head>
-<body style="margin: 0; background-color: #0a0a1a; overflow: hidden; display: flex; justify-content: center; align-items: center; width: 100vw; height: 100vh;">
-  
-  <!-- Wrapper Móvil Restringido (Mantiene el 3D y 2D juntos) -->
-  <div id="app-wrapper" style="position: relative; width: 100%; height: 100%; max-width: 932px; max-height: 430px; box-shadow: 0 0 30px rgba(255, 63, 164, 0.3); overflow: hidden;">
-    <!-- Contenedor WebGL (Fondo 3D) -->
-    <div id="three-container" style="position: absolute; top:0; left:0; width:100%; height:100%; z-index:0;"></div>
-    <!-- Contenedor Phaser (Interfaz superpuesta transparente) -->
-    <div id="game-container" style="position: absolute; top:0; left:0; width:100%; height:100%; z-index:1;"></div>
-  </div>
-  <!-- Error Logger Básico -->
-  <div id="error-log" style="position: absolute; top:0; left:0; background: rgba(255,0,0,0.8); color: white; z-index: 9999; padding: 10px; pointer-events: none; font-family: monospace; font-size: 14px; max-height: 50vh; overflow-y: auto;"></div>
-  <script>
-    window.onerror = function(msg, url, line, col, error) {
-      const log = document.getElementById('error-log');
-      log.innerHTML += `<br/>[ERROR] ${msg} en ${url}:${line}:${col}`;
-      console.error(error);
-    };
-    const oldLog = console.log;
-    const oldWarn = console.warn;
-    const oldErr = console.error;
-    console.error = function() {
-      const log = document.getElementById('error-log');
-      log.innerHTML += `<br/>[CONSOLE.ERROR] ` + Array.from(arguments).join(' ');
-      oldErr.apply(console, arguments);
-    };
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js?v=2" crossorigin="anonymous"></script>
-  <!-- THREE.JS y Motor -->
-  <script src="js/engine/AlebrijeProceduralMesh.js"></script>
-  <script src="js/engine/AlebrijeController.js"></script>
-  <script src="js/engine/EnemyManager.js"></script>
-  <script src="js/engine/Game3D.js"></script>
-  <script src="js/engine/MusicManager.js"></script>
-
-  <script src="js/scenes/BootScene.js?v=2"></script>
-  <script src="js/scenes/TitleScene.js?v=2"></script>
-  <script src="js/scenes/MictlanHubScene.js?v=2"></script>
-  <script src="js/scenes/ShopScene.js?v=2"></script>
-  <script src="js/data/EpochData.js?v=2"></script>
-  <script src="js/scenes/LevelScene.js?v=2"></script>
-  <script src="js/scenes/BossScene.js?v=2"></script>
-  <script src="js/scenes/UIScene.js?v=2"></script>
-  <script src="js/main.js?v=2"></script>
+<body>
+    <div id="overlay">
+        <h1>Tijuana Project Engine</h1>
+        <p>Motor WebGL Custom y Audio Panner 3D (Arquitectura PS2)</p>
+        <button id="btnStart">Iniciar Motor</button>
+    </div>
+    
+    <!-- Lienzo WebGL -->
+    <canvas id="gameCanvas"></canvas>
+    
+    <!-- Punto de entrada general tipo ES Module -->
+    <script type="module" src="js/main.js"></script>
 </body>
 </html>

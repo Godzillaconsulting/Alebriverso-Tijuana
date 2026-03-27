@@ -43,12 +43,16 @@ class ShopScene extends Phaser.Scene {
       backgroundColor: '#1a1a3a', padding: { x: 20, y: 10 },
     }).setOrigin(0.5).setInteractive();
 
+    btnVolver.on('pointerover', () => { if (window.Jukebox) window.Jukebox.sfxHover(); });
     btnVolver.on('pointerdown', () => {
+      if (window.Jukebox) { window.Jukebox.stop(); window.Jukebox.sfxSelect(); }
       this.cameras.main.fadeOut(300, 0, 0, 0);
       this.time.delayedCall(350, () => this.scene.start('MictlanHubScene'));
     });
 
     this.cameras.main.fadeIn(400);
+    // 🎵 Música de tienda
+    if (window.Jukebox) window.Jukebox.playTrack('shop');
   }
 
   _crearTarjetaTraje(traje, x, y) {

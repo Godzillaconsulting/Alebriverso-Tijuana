@@ -116,20 +116,8 @@ class LevelScene extends Phaser.Scene {
     this.alebrije.playerGroup.position.set(0, 5, 0);
 
     this.EnemyMan = new EnemyManager(this.threeScene, this.envMeshes);
-    if (this.epocaId === 1) {
-        this.EnemyMan.createEnemy('aldeano_azteca', new THREE.Vector3(1, 0, -2)); // NPC 
-        const enemyList = ['serpiente_piedra', 'jaguar_obsidiana', 'guerrero_aguila'];
-        for(let i=0; i<6; i++) {
-            const tipo = enemyList[i % 3];
-            const px = Phaser.Math.Between(-3, 3);
-            const pz = Phaser.Math.Between(-15, this.bossZoneZ + 15);
-            const py = tipo === 'guerrero_aguila' ? 4 : 0; 
-            this.EnemyMan.createEnemy(tipo, new THREE.Vector3(px, py, pz));
-        }
-    } else {
-        let sprDef = 'jaguar_obsidiana';
-        for(let i=0; i<5; i++) this.EnemyMan.createEnemy(sprDef, new THREE.Vector3(Phaser.Math.Between(-3,3), 0, Phaser.Math.Between(-20, this.bossZoneZ + 20)));
-    }
+    this._spawnEnemiesByEpoch();
+
 
     // -- SHADOW TIJUANA (Cosmic Clone SM64 NEAT AI Mode) --
     // Un clon espectral que repite tus inputs tras 1.1s de retraso
@@ -142,7 +130,9 @@ class LevelScene extends Phaser.Scene {
 
     this.cursors = this.input.keyboard.createCursorKeys();
     this.wasd = this.input.keyboard.addKeys({ W: 87, A: 65, S: 83, D: 68 });
-    this._makeMobile(W, H);
+    // Mostrar controles táctiles (se ocultan solos en desktop sin touch)
+    if (window.touchControls) window.touchControls.show();
+    window.actualController = this.alebrije;
 
     this.rez = () => {
       this.threeCamera.aspect = window.innerWidth / window.innerHeight;
@@ -155,20 +145,25 @@ class LevelScene extends Phaser.Scene {
   update(time, delta) {
     if (!this.alebrije) return;
     let x = 0, y = 0;
-    if (this.cursors.left.isDown || this.wasd.A.isDown) x = -1;
-    if (this.cursors.right.isDown || this.wasd.D.isDown) x = 1;
-    if (this.cursors.up.isDown || this.wasd.W.isDown) y = -1;
-    if (this.cursors.down.isDown || this.wasd.S.isDown) y = 1;
-    if (this.mDir && (this.mDir.x !== 0 || this.mDir.y !== 0)) { x = this.mDir.x; y = this.mDir.y; }
+    if (this.cursors.left.isDown  || this.wasd.A.isDown) x = -1;
+    if (this.cursors.right.isDown || this.wasd.D.isDown) x =  1;
+    if (this.cursors.up.isDown    || this.wasd.W.isDown) y = -1;
+    if (this.cursors.down.isDown  || this.wasd.S.isDown) y =  1;
+    const kbJump   = Phaser.Input.Keyboard.JustDown(this.cursors.space);
+    const kbAction = false;
 
-    const jump = Phaser.Input.Keyboard.JustDown(this.cursors.space) || this.mobileJump;
-    if (this.mobileJump) this.mobileJump = false;
-    const action = this.mobileAttack;
+    // Mezclar teclado + controles táctiles
+    const inp = window.touchControls
+      ? window.touchControls.mergeInputs(x, y, kbJump, kbAction)
+      : { x, y, jump: kbJump, action: kbAction };
 
-    // 🔊 SFX Salto
+    const jump   = inp.jump;
+    const action = inp.action;
+    if (this.mobileAttack) this.mobileAttack = false; // Reset tras leer
+
     if (jump && window.Jukebox) window.Jukebox.sfxJump();
 
-    this.alebrije.setInput(x, y, jump, action);
+    this.alebrije.setInput(inp.x, inp.y, jump, action);
     this.alebrije.update(delta / 1000);
     
     if (this.EnemyMan) {
@@ -215,7 +210,7 @@ class LevelScene extends Phaser.Scene {
                      pop.position.copy(en.sprite.position);
                      this.threeScene.add(pop);
                      
-                     this.scene.scene.tweens.add({
+                     this.tweens.add({
                          targets: pop.scale, x: 3, y: 3, z: 3, duration: 300,
                          onUpdate: () => pop.material.opacity-=0.1,
                          onComplete: () => this.threeScene.remove(pop)
@@ -294,33 +289,68 @@ class LevelScene extends Phaser.Scene {
     if (window.Jukebox) window.Jukebox.sfxDamage(); // 🔊 SFX daño
     this.alebrije.playerGroup.position.set(0, 5, 0); this.alebrije.velocity.set(0, 0, 0);
     if (window.GameState.vida <= 0) {
+      if (window.Jukebox) { window.Jukebox.stop(); window.Jukebox.sfxGameOver(); }
       this.scene.pause(); this.cameras.main.fadeOut(600, 0, 0, 0);
       this.time.delayedCall(700, () => { window.GameState.vida = window.GameState.vidaMax || 3; this.scene.restart(); });
     }
   }
 
-  _makeMobile(W, H) {
-    this.mDir = { x: 0, y: 0 }; this.mobileJump = false;
-    const ja = this.add.circle(W - 80, H - 80, 40, 0xff3fa4, 0.4).setScrollFactor(0).setInteractive();
-    this.add.text(W - 80, H - 80, 'JUMP', { fontFamily: 'Outfit', color: '#fff' }).setOrigin(0.5).setScrollFactor(0);
-    ja.on('pointerdown', () => this.mobileJump = true);
-
-    // Attack/Action Button (Para Combate y Físicas SM64)
-    const atk = this.add.circle(W - 200, H - 60, 35, 0xffd700, 0.3).setScrollFactor(0).setInteractive().setStrokeStyle(2, 0xffd700);
-    this.add.text(W - 200, H - 60, 'ATK / Z', {fontFamily:'Bebas Neue', fontSize:'20px', color:'#fff'}).setOrigin(0.5).setScrollFactor(0);
-    atk.on('pointerdown', ()=>{ 
-        this.mobileAttack = true;
-        // Lógica futura de combate cuerpo a cuerpo 3D
-        if(window.game3D && window.game3D.enemyManager) {
-            // Ejemplo: if close to enemy, hit
-        }
-    }); 
-    atk.on('pointerup', ()=>{ this.mobileAttack = false; });
-    atk.on('pointerout', ()=>{ this.mobileAttack = false; });
-  }
+  // _makeMobile() reemplazado por TouchControls.js
 
   shutdown() {
+    if (window.touchControls) window.touchControls.hide();
     if (this.renderer) { this.renderer.dispose(); document.getElementById('three-container').innerHTML = ''; }
     window.removeEventListener('resize', this.rez);
   }
+
+  // ── ENEMIGOS POR ÉPOCA HISTÓRICA ─────────────────────────────────────
+  _spawnEnemiesByEpoch() {
+    const rz = () => Phaser.Math.Between(-15, this.bossZoneZ + 15);
+    const rx = () => Phaser.Math.Between(-3, 3);
+    const spawn = (type, y = 0) =>
+      this.EnemyMan.createEnemy(type, new THREE.Vector3(rx(), y, rz()));
+
+    switch (this.epocaId) {
+      case 1: // 🌿 TENOCHTITLÁN — Serpientes, Jaguares, Guerreros Águila
+        this.EnemyMan.createEnemy('aldeano_azteca', new THREE.Vector3(1, 0, -2)); // NPC guía
+        for (let i = 0; i < 3; i++) spawn('serpiente_piedra');
+        for (let i = 0; i < 2; i++) spawn('jaguar_obsidiana');
+        for (let i = 0; i < 2; i++) spawn('guerrero_aguila', 4); // Vuela alto
+        break;
+
+      case 2: // ⚔️ CONQUISTA — Soldados españoles y Jaguares Obsidiana
+        // Nota: "soldado_español" no tiene sprite aún → usamos jaguar_obsidiana como fallback
+        // pero spawnamos con el nombre correcto para cuando llegue el sprite
+        for (let i = 0; i < 4; i++) spawn('jaguar_obsidiana');
+        for (let i = 0; i < 2; i++) spawn('serpiente_piedra');
+        for (let i = 0; i < 1; i++) spawn('guerrero_aguila', 4);
+        break;
+
+      case 3: // ⛪ NUEVA ESPAÑA — Frailes, Guardias Virreinal, Inquisidor
+        for (let i = 0; i < 3; i++) spawn('fraile_antorcha');
+        for (let i = 0; i < 2; i++) spawn('guardia_virreinal');
+        for (let i = 0; i < 1; i++) spawn('inquisidor');
+        break;
+
+      case 4: // 🔔 INDEPENDENCIA — Soldados Realistas + Cañón Vivo
+        for (let i = 0; i < 4; i++) spawn('soldado_realista');
+        for (let i = 0; i < 2; i++) spawn('canon_vivo');
+        break;
+
+      case 5: // 🎩 PORFIRIATO — Rurales con Sombrero y Máquina de Vapor
+        for (let i = 0; i < 4; i++) spawn('rural_sombrero');
+        for (let i = 0; i < 2; i++) spawn('maquina_vapor');
+        break;
+
+      case 6: // 🚂 REVOLUCIÓN — Federales y Cañones Federales
+        for (let i = 0; i < 4; i++) spawn('federal_pelon');
+        for (let i = 0; i < 2; i++) spawn('federales_canon');
+        break;
+
+      default:
+        for (let i = 0; i < 5; i++) spawn('jaguar_obsidiana');
+        break;
+    }
+  }
 }
+

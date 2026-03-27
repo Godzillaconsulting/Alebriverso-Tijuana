@@ -307,9 +307,9 @@ class AlebrijeController {
                  
                  if (this.jumpCount > 3) this.jumpCount = 1;
                  
-                 if (this.jumpCount === 1) this.velocity.y = this.jumpForce;
-                 else if (this.jumpCount === 2) this.velocity.y = this.jumpForce * 1.15;
-                 else if (this.jumpCount === 3) this.velocity.y = this.jumpForce * 1.45; // El gran salto final
+                 if (this.jumpCount === 1) { this.velocity.y = this.jumpForce; if(window.Jukebox) window.Jukebox.sfxJump(); }
+                 else if (this.jumpCount === 2) { this.velocity.y = this.jumpForce * 1.15; if(window.Jukebox) window.Jukebox.sfxDoubleJump(); }
+                 else if (this.jumpCount === 3) { this.velocity.y = this.jumpForce * 1.45; if(window.Jukebox) window.Jukebox.sfxDoubleJump(); } // Triple
                  
                  this.playerGroup.scale.set(0.5, 1.6, 0.5); // ¡STRETCH!
                  this._spawnDustParticles(this.playerGroup.position, 4);

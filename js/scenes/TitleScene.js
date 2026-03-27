@@ -303,6 +303,7 @@ class TitleScene extends Phaser.Scene {
     hitbox.on('pointerover', () => { 
         this.tweens.add({ targets: btnContainer, scaleX: 1.1, scaleY: 1.1, duration: 200, ease: 'Back.easeOut' });
         glow.setAlpha(0.8);
+        if (window.Jukebox) window.Jukebox.sfxHover(); // 🔊 SFX hover
     });
     hitbox.on('pointerout', () => { 
         this.tweens.add({ targets: btnContainer, scaleX: 1, scaleY: 1, duration: 200, ease: 'Back.easeOut' });
@@ -411,6 +412,18 @@ class TitleScene extends Phaser.Scene {
     group.add(particlesMesh);
     window.threeParticles = particlesMesh;
 
+    // ── PERSONAJE TIJUANA (Malla Procedural 3D) ──
+    if (typeof buildProceduralAlebrije === 'function') {
+        const alebrije = buildProceduralAlebrije();
+        // Posicionar centrado, flotando sobre el grid, ligeramente hacia adelante
+        alebrije.position.set(0, -0.5, 4);
+        alebrije.scale.setScalar(1.4); // Un poco más grande para la cámara de título
+        alebrije.rotation.y = Math.PI; // De frente a la cámara
+        group.add(alebrije);
+        window.threeAlebrije = alebrije;
+        window.threeAlebrijeTime = 0; // Reloj de animación
+    }
+
     window.addEventListener('resize', () => {
       if(window.threeCamera && window.threeRenderer && container) {
         const r = container.getBoundingClientRect();
@@ -434,6 +447,14 @@ class TitleScene extends Phaser.Scene {
       // Rotar Galaxia de partículas almas
       if (window.threeParticles) {
           window.threeParticles.rotation.y = time * 0.00005;
+      }
+
+      // Animar Personaje Procedural — idle float + slow showcase rotation
+      if (window.threeAlebrije && window.threeAlebrije.updateIdle) {
+          window.threeAlebrijeTime = (window.threeAlebrijeTime || 0) + delta * 0.001;
+          window.threeAlebrije.updateIdle(window.threeAlebrijeTime);
+          // Rotación lenta mostrando el diseño completo (360° cada ~20s)
+          window.threeAlebrije.rotation.y = Math.PI + window.threeAlebrijeTime * 0.3;
       }
 
       window.threeRenderer.render(window.threeScene, window.threeCamera);

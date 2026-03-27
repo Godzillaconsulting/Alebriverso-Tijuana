@@ -97,7 +97,7 @@ class BossScene extends Phaser.Scene {
         this.alebrije.playerGroup.position.sub(this.alebrije.velocity.clone().multiplyScalar(delta/500));
     }
 
-    if (this.enemyManager) this.enemyManager.update(this.threeCamera);
+    if (this.enemyManager) this.enemyManager.update(this.threeCamera, this.alebrije.playerGroup.position, delta / 1000, time);
 
     if (this.bossState !== 'dead') {
        this._updateBossFSM(delta, time);
@@ -237,7 +237,7 @@ class BossScene extends Phaser.Scene {
   _checkCollisions() {
       const dist = this.alebrije.playerGroup.position.distanceTo(this.bossEnemy.sprite.position);
       // Validar golpe (Jump On Top o ATK)
-      if (dist < 4.5 && this.isAttacking && this.bossState !== 'hurt') {
+      if (dist < 4.5 && (this.isAttacking || this.alebrije.isAttacking) && this.bossState !== 'hurt') {
           this.bossState = 'hurt';
           this.bossHp -= 1.0;
           this.tweens.add({ targets: this.bossHpBar, width: 200 * (this.bossHp/this.maxBossHp), duration: 200 });
@@ -267,6 +267,7 @@ class BossScene extends Phaser.Scene {
       this.cameras.main.shake(200, 0.015);
       if (window.Jukebox) window.Jukebox.sfxDamage(); // 🔊 SFX daño
       if (this.vida <= 0) {
+          if (window.Jukebox) { window.Jukebox.stop(); window.Jukebox.sfxGameOver(); }
           this.scene.pause(); this.cameras.main.fadeOut(600, 0, 0, 0);
           this.time.delayedCall(700, () => { window.GameState.vida = window.GameState.vidaMax || 3; this.scene.restart(); });
       }

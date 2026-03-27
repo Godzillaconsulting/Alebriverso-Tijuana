@@ -7,14 +7,29 @@ class BootScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image('colibri', 'assets/sprites/colibri.png');
-    this.load.image('jaguar', 'assets/sprites/jaguar.png');
-    this.load.image('serpiente', 'assets/sprites/serpiente.png');
-    // Sprites 3D HD Generados
-    this.load.image('tijuana', 'assets/sprites/tijuana.png');
-    this.load.image('huitzilopochtli', 'assets/sprites/huitzilopochtli.png');
-    this.load.image('guerrero_aguila', 'assets/sprites/guerrero_aguila.png');
-    this.load.image('aldeano', 'assets/sprites/aldeano_azteca.png');
+    // Sprites — Opcionales: si no existen, el juego usa fallback procedural
+    // El error se suprime silenciosamente para no bloquear el boot
+    this.load.on('loaderror', (file) => {
+      console.warn(`[BootScene] Sprite no encontrado (ignorado): ${file.key} → ${file.url}`);
+    });
+
+    this.load.image('colibri',          'assets/sprites/colibri.png');
+    this.load.image('jaguar',           'assets/sprites/jaguar.png');
+    this.load.image('serpiente',        'assets/sprites/serpiente.png');
+    this.load.image('tijuana',          'assets/sprites/tijuana.png');
+    this.load.image('huitzilopochtli',  'assets/sprites/huitzilopochtli.png');
+    this.load.image('guerrero_aguila',  'assets/sprites/guerrero_aguila.png');
+    this.load.image('aldeano',          'assets/sprites/aldeano_azteca.png');
+    // Sprites de épocas 3-6 (generados proceduralmente si no existen)
+    this.load.image('fraile_antorcha',  'assets/sprites/fraile_antorcha.png');
+    this.load.image('guardia_virreinal','assets/sprites/guardia_virreinal.png');
+    this.load.image('inquisidor',       'assets/sprites/inquisidor.png');
+    this.load.image('soldado_realista', 'assets/sprites/soldado_realista.png');
+    this.load.image('canon_vivo',       'assets/sprites/canon_vivo.png');
+    this.load.image('rural_sombrero',   'assets/sprites/rural_sombrero.png');
+    this.load.image('maquina_vapor',    'assets/sprites/maquina_vapor.png');
+    this.load.image('federal_pelon',    'assets/sprites/federal_pelon.png');
+    this.load.image('federales_canon',  'assets/sprites/federales_canon.png');
   }
 
   create() {

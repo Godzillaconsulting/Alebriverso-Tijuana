@@ -33,6 +33,9 @@ class Game3D {
         // Clases de Motor Físico (Desarrolladas por el usuario)
         this.controller = new AlebrijeController(this.scene, this.camera);
         
+        // --- ENGINE MANAGER FUSIONADO DESDE MVP ---
+        this.gameManager = new GameManager(this.scene);
+        
         // Manejador de Entorno
         this.terrainGroup = new THREE.Group();
         this.scene.add(this.terrainGroup);
@@ -478,6 +481,11 @@ class Game3D {
         // Actualizar Física y Movimiento (User engine)
         if (this.controller) this.controller.update(delta);
         if (this.enemyManager) this.enemyManager.update(this.camera);
+        
+        // Actualizar Gemas Procedurales
+        if (this.gameManager && this.controller.playerGroup) {
+            this.gameManager.update(delta, this.controller.playerGroup.position);
+        }
 
         this.renderer.render(this.scene, this.camera);
     }

@@ -1,0 +1,117 @@
+{
+    "name": "Época 1 - El Despertar de la Iguana en Tenochtitlán",
+    "version": "2.1",
+    "playerSpawn": {
+        "x": 0,
+        "y": 5,
+        "z": 120
+    },
+    "platforms": [
+        {"id": "microbus_chasis", "position": {"x": -15, "y": 1, "z": 130}, "size": {"width": 6, "height": 4, "depth": 14}, "color": "#2cdbaa", "movement": {"axis": "x", "distance": 25, "speed": 1.5}},
+        {"id": "microbus_techo", "position": {"x": -15, "y": 3.5, "z": 130}, "size": {"width": 6, "height": 1, "depth": 14}, "color": "#f2f2f2"},
+        
+        {"id": "chinampa_origen", "position": {"x": 0, "y": -1, "z": 100}, "size": {"width": 60, "height": 2, "depth": 60}, "color": "#3d8c40"},
+        {"id": "puente_chinampa_1", "position": {"x": 0, "y": -1, "z": 60}, "size": {"width": 8, "height": 2, "depth": 30}, "color": "#6b4423", "isMud": true},
+        {"id": "checkpoint_chinampa", "position": {"x": 0, "y": 0, "z": 75}, "size": {"width": 8, "height": 1, "depth": 8}, "color": "#aaaaaa", "isCheckpoint": true},
+
+        {"id": "plaza_tlatelolco", "position": {"x": 0, "y": -1, "z": -20}, "size": {"width": 140, "height": 2, "depth": 100}, "color": "#d4c3a3"},
+        {"id": "checkpoint_plaza", "position": {"x": 0, "y": 0, "z": 25}, "size": {"width": 8, "height": 1, "depth": 8}, "color": "#aaaaaa", "isCheckpoint": true},
+        
+        {"id": "altar_ceremonial_1", "position": {"x": 45, "y": 0, "z": -10}, "size": {"width": 4, "height": 1, "depth": 4}, "color": "#ff3333", "isSwitch": true, "puzzleGroup": "puerta_teocalli"},
+        {"id": "altar_ceremonial_2", "position": {"x": -45, "y": 0, "z": -10}, "size": {"width": 4, "height": 1, "depth": 4}, "color": "#ff3333", "isSwitch": true, "puzzleGroup": "puerta_teocalli"},
+        {"id": "altar_ceremonial_3", "position": {"x": 0, "y": 0, "z": -60}, "size": {"width": 4, "height": 1, "depth": 4}, "color": "#ff3333", "isSwitch": true, "puzzleGroup": "puerta_teocalli"},
+        
+        {"id": "canon_tlatelolco", "type": "cannon", "position": {"x": 20, "y": 0, "z": 0}, "color": "#111111"},
+        
+        {"id": "espejo_plaza", "type": "obsidian_mirror", "position": {"x": -25, "y": -0.9, "z": 25}, "color": "#050505", "targetPos": {"x": 160, "y": -28, "z": -20}},
+        {"id": "espejo_cenote", "type": "obsidian_mirror", "position": {"x": 160, "y": -27.9, "z": -20}, "color": "#050505", "targetPos": {"x": -25, "y": 1, "z": 25}},
+        
+        {"id": "piramide_norte_foso_lodo", "position": {"x": -45, "y": -2, "z": 0}, "size": {"width": 30, "height": 4, "depth": 30}, "color": "#4a3c2b", "isMud": true},
+        {"id": "piramide_norte_base", "position": {"x": -45, "y": 3, "z": 0}, "size": {"width": 16, "height": 6, "depth": 16}, "color": "#767676"},
+        {"id": "piramide_norte_top", "position": {"x": -45, "y": 7, "z": 0}, "size": {"width": 8, "height": 2, "depth": 8}, "color": "#a1a1a1"},
+
+        {"id": "piramide_sur_base", "position": {"x": 45, "y": 1, "z": 0}, "size": {"width": 20, "height": 4, "depth": 20}, "color": "#767676"},
+        {"id": "piramide_sur_escalon", "position": {"x": 45, "y": 4, "z": 0}, "size": {"width": 14, "height": 2, "depth": 14}, "color": "#1a1a1a", "isIce": true},
+        {"id": "piramide_sur_top", "position": {"x": 45, "y": 6, "z": 0}, "size": {"width": 8, "height": 2, "depth": 8}, "color": "#111111", "isIce": true},
+
+        {"id": "puerta_teocalli", "position": {"x": 0, "y": 14, "z": -70}, "size": {"width": 40, "height": 30, "depth": 10}, "color": "#222222", "isDoor": true, "targetY": -3},
+        {"id": "gran_teocalli_base", "position": {"x": 0, "y": 8, "z": -120}, "size": {"width": 80, "height": 16, "depth": 80}, "color": "#595959"},
+        {"id": "gran_teocalli_step_1", "position": {"x": 0, "y": 4, "z": -75}, "size": {"width": 10, "height": 8, "depth": 10}, "color": "#6a6a6a"},
+        {"id": "gran_teocalli_mid", "position": {"x": 0, "y": 24, "z": -120}, "size": {"width": 50, "height": 16, "depth": 50}, "color": "#4d4d4d"},
+        {"id": "gran_teocalli_hielo_trampa", "position": {"x": 0, "y": 24, "z": -90}, "size": {"width": 20, "height": 2, "depth": 20}, "color": "#1a1a1a", "isIce": true},
+        {"id": "gran_teocalli_top", "position": {"x": 0, "y": 38, "z": -130}, "size": {"width": 30, "height": 12, "depth": 30}, "color": "#404040"},
+        {"id": "gran_teocalli_peak", "position": {"x": 0, "y": 46, "z": -140}, "size": {"width": 16, "height": 4, "depth": 16}, "color": "#262626"},
+        
+        {"id": "escalinata_cenote_1", "position": {"x": 80, "y": -4, "z": -20}, "size": {"width": 20, "height": 4, "depth": 60}, "color": "#734e29"},
+        {"id": "escalinata_cenote_2", "position": {"x": 100, "y": -8, "z": -20}, "size": {"width": 20, "height": 4, "depth": 60}, "color": "#5e3e1e"},
+        {"id": "checkpoint_cenote", "position": {"x": 100, "y": -6, "z": -20}, "size": {"width": 8, "height": 1, "depth": 8}, "color": "#aaaaaa", "isCheckpoint": true},
+        {"id": "fondo_cenote", "position": {"x": 160, "y": -28, "z": -20}, "size": {"width": 100, "height": 2, "depth": 80}, "color": "#0a1a3a"},
+        
+        {"id": "cueva_cenote_pared_n", "position": {"x": 160, "y": -14, "z": -60}, "size": {"width": 100, "height": 26, "depth": 10}, "color": "#112b4a"},
+        {"id": "cueva_cenote_pared_s", "position": {"x": 160, "y": -14, "z": 20}, "size": {"width": 100, "height": 26, "depth": 10}, "color": "#112b4a"},
+        
+        {"id": "muelle_trajineras_1", "position": {"x": 130, "y": -2, "z": -10}, "size": {"width": 10, "height": 2, "depth": 20}, "color": "#8b5a2b", "movement": {"axis": "y", "distance": 12, "speed": 2.5}},
+        {"id": "muelle_trajineras_2", "position": {"x": 160, "y": -4, "z": -30}, "size": {"width": 10, "height": 2, "depth": 20}, "color": "#8b5a2b", "movement": {"axis": "z", "distance": 25, "speed": 3.0}},
+        
+        {"id": "puente_quebrada_lava", "position": {"x": -80, "y": -1, "z": -20}, "size": {"width": 20, "height": 2, "depth": 20}, "color": "#4a2311"},
+        {"id": "checkpoint_lava", "position": {"x": -80, "y": 0, "z": -20}, "size": {"width": 8, "height": 1, "depth": 8}, "color": "#aaaaaa", "isCheckpoint": true},
+        
+        {"id": "gran_lago_lava", "position": {"x": -150, "y": -6, "z": -20}, "size": {"width": 120, "height": 4, "depth": 120}, "color": "#ff3300", "isLava": true},
+        {"id": "islote_obsidiana_1", "position": {"x": -120, "y": -2, "z": -20}, "size": {"width": 10, "height": 2, "depth": 10}, "color": "#1a1a1a", "isIce": true},
+        {"id": "islote_obsidiana_2", "position": {"x": -150, "y": 2, "z": 10}, "size": {"width": 10, "height": 2, "depth": 10}, "color": "#111111", "isIce": true},
+        {"id": "balsa_quemada", "position": {"x": -140, "y": -2, "z": -50}, "size": {"width": 10, "height": 1, "depth": 10}, "color": "#000000", "movement": {"axis": "x", "distance": 40, "speed": 4.0}},
+        
+        {"id": "altar_volcan", "position": {"x": -190, "y": 6, "z": -20}, "size": {"width": 20, "height": 16, "depth": 20}, "color": "#33180b"},
+
+        {"id": "pasillo_bosque", "position": {"x": 50, "y": 8, "z": -160}, "size": {"width": 20, "height": 2, "depth": 40}, "color": "#1a3300", "movement": {"axis": "x", "distance": 40, "speed": 1.0}},
+        {"id": "checkpoint_bosque", "position": {"x": 30, "y": 14, "z": -180}, "size": {"width": 20, "height": 4, "depth": 20}, "color": "#4a3018", "isCheckpoint": true},
+        
+        {"id": "tronco_nahual_1", "position": {"x": -10, "y": 12, "z": -220}, "size": {"width": 10, "height": 10, "depth": 10}, "color": "#2c1c0c", "type": "pole", "radius": 4, "height": 25},
+        {"id": "tronco_nahual_2", "position": {"x": 15, "y": 16, "z": -250}, "size": {"width": 10, "height": 10, "depth": 10}, "color": "#1d1208", "type": "pole", "radius": 3, "height": 35},
+        {"id": "tronco_nahual_3", "position": {"x": -20, "y": 24, "z": -280}, "size": {"width": 10, "height": 10, "depth": 10}, "color": "#0c0803", "type": "pole", "radius": 2, "height": 50},
+        
+        {"id": "nido_quetzal", "position": {"x": 0, "y": 30, "z": -310}, "size": {"width": 20, "height": 2, "depth": 20}, "color": "#766d2a"}
+    ],
+    "collectibles": [
+        {"id":"pasaje_chinampa_1", "type":"coin", "position":{"x":0, "y":1, "z":85}},
+        {"id":"pasaje_chinampa_2", "type":"coin", "position":{"x":0, "y":1, "z":65}},
+
+        {"id":"pasaje_plaza_sur", "type":"coin", "position":{"x":0, "y":1, "z":-10}},
+        {"id":"pasaje_plaza_lodo_1", "type":"coin", "position":{"x":-45, "y":10, "z":0}},
+        {"id":"pasaje_plaza_hielo_1", "type":"coin", "position":{"x":45, "y":9, "z":0}},
+        {"id":"frag_sol_teocalli", "type":"star", "position":{"x":0, "y":50, "z":-140}},
+
+        {"id":"pasaje_cenote_bajada", "type":"coin", "position":{"x":90, "y":-3, "z":-20}},
+        {"id":"pasaje_cenote_agua_1", "type":"coin", "position":{"x":130, "y":1, "z":-10}},
+        {"id":"pasaje_cenote_agua_2", "type":"coin", "position":{"x":160, "y":-2, "z":-30}},
+        {"id":"frag_sol_cenote_profundo", "type":"star", "position":{"x":180, "y":-26, "z":-20}},
+
+        {"id":"pasaje_lava_1", "type":"coin", "position":{"x":-120, "y":0, "z":-20}},
+        {"id":"pasaje_lava_2", "type":"coin", "position":{"x":-150, "y":4, "z":10}},
+        {"id":"frag_sol_volcan", "type":"star", "position":{"x":-190, "y":16, "z":-20}},
+
+        {"id":"frag_sol_nido", "type":"star", "position":{"x":0, "y":32, "z":-310}},
+
+        {"id":"obsidiana_1_chinampa",  "type":"obsidian", "position":{"x":0,    "y":2,  "z":90}},
+        {"id":"obsidiana_2_plaza",     "type":"obsidian", "position":{"x":30,   "y":2,  "z":-30}},
+        {"id":"obsidiana_3_piramide",  "type":"obsidian", "position":{"x":-45,  "y":10, "z":0}},
+        {"id":"obsidiana_4_cenote",    "type":"obsidian", "position":{"x":155,  "y":-25, "z":-20}},
+        {"id":"obsidiana_5_volcan",    "type":"obsidian", "position":{"x":-190, "y":18, "z":-20}}
+    ],
+    "enemies": [
+        {"id":"vasija_inicio_1", "type":"pot", "position":{"x":-8, "y":0, "z":105}},
+        {"id":"vasija_inicio_2", "type":"pot", "position":{"x":0, "y":0, "z":105}},
+        {"id":"vasija_inicio_3", "type":"pot", "position":{"x":8, "y":0, "z":105}},
+
+        {"id":"alebrije_limo_spawn",           "type":"goomba", "spriteType":"aldeano_azteca", "position":{"x":15, "y":1, "z":100}},
+        {"id":"alebrije_limo_lodo",             "type":"goomba", "spriteType":"serpiente",      "position":{"x":-65, "y":0, "z":0}},
+        {"id":"guerrero_jaguar_plaza",          "type":"goomba", "spriteType":"jaguar",          "position":{"x":20, "y":0, "z":-40}},
+        {"id":"guerrero_jaguar_hielo",          "type":"goomba", "spriteType":"jaguar",          "position":{"x":45, "y":7, "z":0}},
+        {"id":"guerrero_jaguar_teocalli_mid",   "type":"goomba", "spriteType":"guerrero_aguila", "enemyType":"RANGED", "position":{"x":10, "y":30, "z":-120}},
+        {"id":"jefe_final_teocalli",            "type":"goomba", "spriteType":"huitzilopochtli", "enemyType":"RANGED", "position":{"x":0, "y":48, "z":-140}},
+
+        {"id":"alebrije_limo_cenote",           "type":"goomba", "spriteType":"colibri",         "enemyType":"MELEE",  "position":{"x":110, "y":-5, "z":-20}},
+        {"id":"guerrero_fuego_volcan",          "type":"goomba", "spriteType":"guerrero_aguila", "enemyType":"RANGED", "position":{"x":-140, "y":0, "z":-50}},
+        {"id":"espiritu_nahual",                "type":"goomba", "spriteType":"colibri",         "enemyType":"MELEE",  "position":{"x":30, "y":17, "z":-180}}
+    ]
+}

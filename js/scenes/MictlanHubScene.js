@@ -67,13 +67,18 @@ class MictlanHubScene extends Phaser.Scene {
     }).setOrigin(0.5);
     this.time.addEvent({ delay: 3000, loop: true, callback: () => { dIdx = (dIdx + 1) % dialogo.length; dialogBox.setText(dialogo[dIdx]); } });
 
-    // ── INPUTS DE CARÁCTER 3D (Mueve al personaje con WASD o Flechas) ──
+    // ── INPUTS DE CARÁCTER 3D (teclado + controles táctiles) ──
     this.cursors = this.input.keyboard.createCursorKeys();
     this.keys = this.input.keyboard.addKeys('W,A,S,D');
 
-    // MOUSE DRAG PARA MOVER LA CÁMARA (LAKITU CAM)
+    // Controles táctiles móviles
+    if (window.touchControls) window.touchControls.show();
+
+    // MOUSE DRAG PARA MOVER LA CÁMARA (LAKITU CAM) — 2 dedos en móvil
     this.input.on('pointermove', (pointer) => {
-        if (pointer.isDown && this.alebrijeCam) {
+        if (pointer.isDown && pointer.id !== 0 && this.alebrijeCam) {
+            this.alebrijeCam.orbitCamera(pointer.x - pointer.prevPosition.x, pointer.y - pointer.prevPosition.y);
+        } else if (pointer.isDown && !window.touchControls && this.alebrijeCam) {
             this.alebrijeCam.orbitCamera(pointer.x - pointer.prevPosition.x, pointer.y - pointer.prevPosition.y);
         }
     });
@@ -139,17 +144,20 @@ class MictlanHubScene extends Phaser.Scene {
 
   update(time, delta) {
       if (this.alebrijeCam) {
-          let movX = 0, movY = 0;
-          if (this.cursors.left.isDown || this.keys.A.isDown) movX = -1;
-          if (this.cursors.right.isDown || this.keys.D.isDown) movX = 1;
-          if (this.cursors.up.isDown || this.keys.W.isDown) movY = 1; // Arriba = Adelante
-          if (this.cursors.down.isDown || this.keys.S.isDown) movY = -1;
-          
-          const jump = Phaser.Input.Keyboard.JustDown(this.cursors.space);
-          
-          this.alebrijeCam.setInput(movX, movY, jump);
-          this.alebrijeCam.update(delta / 1000); // Se requiere pasar en segundos
-          
+          let kbX = 0, kbY = 0;
+          if (this.cursors.left.isDown  || this.keys.A.isDown) kbX = -1;
+          if (this.cursors.right.isDown || this.keys.D.isDown) kbX =  1;
+          if (this.cursors.up.isDown    || this.keys.W.isDown) kbY =  1;
+          if (this.cursors.down.isDown  || this.keys.S.isDown) kbY = -1;
+          const kbJump = Phaser.Input.Keyboard.JustDown(this.cursors.space);
+
+          const inp = window.touchControls
+            ? window.touchControls.mergeInputs(kbX, kbY, kbJump, false)
+            : { x: kbX, y: kbY, jump: kbJump, action: false };
+
+          this.alebrijeCam.setInput(inp.x, inp.y, inp.jump);
+          this.alebrijeCam.update(delta / 1000);
+
           if (window.game3D) window.game3D.renderer.render(window.game3D.scene, window.game3D.camera);
           else if (window.threeRenderer) window.threeRenderer.render(window.threeScene, window.threeCamera);
       }
@@ -216,5 +224,8 @@ class MictlanHubScene extends Phaser.Scene {
       this.cameras.main.fadeOut(300, 0, 0, 0);
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('ShopScene'));
     });
+  }
+  shutdown() {
+    if (window.touchControls) window.touchControls.hide();
   }
 }
