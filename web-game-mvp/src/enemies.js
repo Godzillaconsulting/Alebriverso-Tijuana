@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { playLandSound } from './audio.js';
+import { playLandSound, playEnemyGrowl, playEnemyHit } from './audio.js';
 import MaterialManager from './materialManager.js';
 import { lootSystem } from './lootSystem.js';
 
@@ -125,6 +125,7 @@ export class EnemyManager {
             ['serpiente',        '/textures/serpiente_frente.jpg'],
             ['huitzilopochtli',  '/textures/huitzilo_frente.jpg'],
             ['guerrero_aguila',  '/textures/jaguar_frente.jpg'],  // Fallback temporal
+            ['mercader',         '/textures/ui/mercader_sprite.png'],
         ]);
 
         const texturePath = SPRITE_MAP.get(spriteType) ?? '/textures/jaguar_frente.jpg';
@@ -244,7 +245,7 @@ export class EnemyManager {
         // Iterar el array proxy para actualizar lógica de cada enemigo
         for (let i = 0; i < this.enemies.length; i++) {
             const e = this.enemies[i];
-            const dist = e.position.distanceTo(playerPos);
+            const distSq = e.position.distanceToSquared(playerPos);
 
             // --- BILLBOARD: Rotar sprite hacia la cámara (Doom-style) ---
             // El spritePlane tiene isBillboard=true; lo orientamos hacia el jugador en YXZ
@@ -267,9 +268,12 @@ export class EnemyManager {
             }
 
             
-            // Evaluación de Aggro (Transición de Estado) — Solo si no muerto/stagger
+            // Evaluación de Aggro (Transición de Estado) — Solo si no muerto/stagger y no es un NPC Pacífico
             if (e.userData.state !== 'DEAD' && e.userData.state !== 'STAGGER') {
-                if (dist < e.userData.aggroRange) {
+                if (e.userData.spriteType === 'mercader') {
+                    e.userData.state = 'IDLE'; // El mercader es pacífico
+                } else if (distSq < e.userData.aggroRange * e.userData.aggroRange) {
+                    if (e.userData.state === 'PATROL') playEnemyGrowl(e.position);
                     e.userData.state = 'CHASE';
                 } else {
                     e.userData.state = 'PATROL';
@@ -358,6 +362,11 @@ export class EnemyManager {
                 e.position.addScaledVector(forward, currentSpeed * delta);
                 isMoving = true;
                 
+            } else if (e.userData.state === 'IDLE') {
+                // NPC Pacífico (Mercader)
+                const time = (Date.now() * 0.001 * 0.5) + e.userData.animOffset; // Use a fixed speed for idle bob
+                e.position.y += Math.sin(time * 2.0) * delta * 0.5; // Respiración suave
+                // Sin movimiento X/Z
             } else if (e.userData.state === 'PATROL') {
                 e.userData.patrolAngle += 1.5 * delta;
                 const offsetX = Math.cos(e.userData.patrolAngle) * 2;
@@ -397,6 +406,7 @@ export class EnemyManager {
                         this.vfxManager.createDustPuff(e.position, 10);
                         this.vfxManager.createSparks(e.position, 15);
                     }
+                    playEnemyHit(e.position);
                     playLandSound();
                     // === LOOT DROP (RE4 Grade) ===
                     lootSystem.dropLoot(e.userData.spriteType || 'aldeano_azteca', e.position.clone());
@@ -421,7 +431,7 @@ export class EnemyManager {
      */
     hitEnemy(enemyGroup, attackOrigin, isRemateBlow = false) {
         const ud = enemyGroup.userData;
-        if (!ud || ud.state === 'DEAD' || ud.state === 'STAGGER') return false;
+        if (!ud || ud.state === 'DEAD' || ud.state === 'STAGGER' || ud.spriteType === 'mercader') return false;
         
         const dmg = isRemateBlow ? 2 : 1;
         ud.hp -= dmg;
@@ -437,7 +447,7 @@ export class EnemyManager {
                 this.vfxManager.createDustPuff(enemyGroup.position, 12);
                 this.vfxManager.createSparks(enemyGroup.position, 20);
             }
-            playLandSound();
+            playEnemyHit(enemyGroup.position);
             window.dispatchEvent(new CustomEvent('cameraShake', { detail: { duration: 0.4, intensity: 2.0 } }));
             window.dispatchEvent(new CustomEvent('coinCollected'));
             return true;
@@ -454,6 +464,7 @@ export class EnemyManager {
             knockDir.y = 0;
             ud.staggerVelocity = knockDir.multiplyScalar(8.0);
             
+            playEnemyHit(enemyGroup.position);
             if (this.vfxManager) this.vfxManager.createSparks(enemyGroup.position, 8);
             window.dispatchEvent(new CustomEvent('cameraShake', { detail: { duration: 0.2, intensity: 0.8 } }));
         }

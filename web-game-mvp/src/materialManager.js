@@ -228,13 +228,36 @@ class MaterialManager {
             shader.vertexShader = shader.vertexShader.replace(
                 '#include <common>',
                 `#include <common>
-                 varying vec3 vCustomWorldPos;`
+                 varying vec3 vCustomWorldPos;
+                 uniform float uTime;`
             );
+            
+            let vertexDisplacement = `
+                 vec4 customWorldPosition = modelMatrix * vec4(position, 1.0);
+                 vCustomWorldPos = customWorldPosition.xyz;
+            `;
+            
+            // Si es agua, aplicamos físicas de olas 3D reales al vértice
+            if (type === 'water') {
+                vertexDisplacement = `
+                     vec3 transformed = vec3(position);
+                     // Olas físicas basadas en suma de senos y uTime
+                     float waveX = sin(transformed.x * 2.0 + uTime * 2.5) * 0.15;
+                     float waveZ = cos(transformed.z * 2.0 + uTime * 2.0) * 0.15;
+                     float microWave = sin((transformed.x + transformed.z) * 5.0 - uTime * 4.0) * 0.05;
+                     
+                     transformed.y += waveX + waveZ + microWave;
+                     
+                     vec4 customWorldPosition = modelMatrix * vec4(transformed, 1.0);
+                     vCustomWorldPos = customWorldPosition.xyz;
+                `;
+            }
+
             shader.vertexShader = shader.vertexShader.replace(
                 '#include <begin_vertex>',
                 `#include <begin_vertex>
-                 vec4 customWorldPosition = modelMatrix * vec4(position, 1.0);
-                 vCustomWorldPos = customWorldPosition.xyz;`
+                 ${vertexDisplacement}
+                `
             );
 
             // Inyectar Funciones Matemáticas de Ruido 3D

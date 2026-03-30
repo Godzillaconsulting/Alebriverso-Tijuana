@@ -21,36 +21,36 @@ import MaterialManager from './materialManager.js';
 // weight = probabilidad relativa (se normaliza en runtime)
 const LOOT_TABLES = new Map([
     ['aldeano_azteca',   [
-        { itemType: 'health_herb',    weight: 20, count: 1 },
+        { itemType: 'bolillo',    weight: 20, count: 1 },
         { itemType: 'ammo_light',     weight: 40, count: 3 },
         { itemType: 'obsidian_shard', weight: 30, count: 2 },
         { itemType: null,             weight: 10, count: 0 }, // Drop vacío
     ]],
     ['jaguar',           [
         { itemType: 'obsidian_shard', weight: 35, count: 3 },
-        { itemType: 'health_herb',    weight: 15, count: 1 },
+        { itemType: 'bolillo',    weight: 15, count: 1 },
         { itemType: 'ammo_light',     weight: 30, count: 5 },
         { itemType: null,             weight: 20, count: 0 },
     ]],
     ['serpiente',        [
-        { itemType: 'health_herb',    weight: 50, count: 2 },
+        { itemType: 'bolillo',    weight: 50, count: 2 },
         { itemType: 'obsidian_shard', weight: 30, count: 1 },
         { itemType: null,             weight: 20, count: 0 },
     ]],
     ['colibri',          [
         { itemType: 'star_fragment',  weight: 15, count: 1 },
         { itemType: 'ammo_light',     weight: 50, count: 5 },
-        { itemType: 'health_herb',    weight: 20, count: 1 },
+        { itemType: 'bolillo',    weight: 20, count: 1 },
         { itemType: null,             weight: 15, count: 0 },
     ]],
     ['huitzilopochtli',  [
         { itemType: 'star_fragment',  weight: 40, count: 1 },
-        { itemType: 'health_herb',    weight: 30, count: 2 },
+        { itemType: 'bolillo',    weight: 30, count: 2 },
         { itemType: 'obsidian_shard', weight: 30, count: 5 },
     ]],
     ['guerrero_aguila',  [
         { itemType: 'obsidian_shard', weight: 40, count: 4 },
-        { itemType: 'health_herb',    weight: 25, count: 1 },
+        { itemType: 'bolillo',    weight: 25, count: 1 },
         { itemType: 'ammo_light',     weight: 25, count: 5 },
         { itemType: null,             weight: 10, count: 0 },
     ]],
@@ -59,7 +59,7 @@ const LOOT_TABLES = new Map([
 // Tabla deafult para spriteTypes no registrados
 const DEFAULT_TABLE = [
     { itemType: 'ammo_light', weight: 60, count: 3 },
-    { itemType: 'health_herb', weight: 20, count: 1 },
+    { itemType: 'bolillo', weight: 20, count: 1 },
     { itemType: null, weight: 20, count: 0 },
 ];
 
@@ -105,8 +105,8 @@ class LootSystem {
 
         // Si el jugador está cerca (< 4u) → auto-pickup sin mesh
         if (this._player) {
-            const dist = position.distanceTo(this._player.mesh.position);
-            if (dist < 4.0) {
+            const distSq = position.distanceToSquared(this._player.mesh.position);
+            if (distSq < 16.0) {
                 inventorySystem.addItem(result.itemType, result.count);
                 console.log(`[LootSystem] Auto-pickup: ${result.count}x ${result.itemType}`);
                 return;
@@ -126,7 +126,7 @@ class LootSystem {
 
         // Color por tipo de ítem
         const colors = {
-            'health_herb':    0x00ff88,
+            'bolillo':        0xdfb175, // Color pan/bolillo
             'ammo_light':     0xffaa00,
             'obsidian_shard': 0x8844ff,
             'star_fragment':  0xffff00,
@@ -143,6 +143,8 @@ class LootSystem {
             opacity: 0.9
         });
         const mesh = new THREE.Mesh(geo, mat);
+        if (itemType === 'bolillo') mesh.scale.set(1.4, 0.8, 0.8);
+        
         mesh.position.copy(position).add(new THREE.Vector3(
             (Math.random() - 0.5) * 1.5, 0.5,
             (Math.random() - 0.5) * 1.5
@@ -187,8 +189,8 @@ class LootSystem {
             drop.mesh.rotation.y += delta * 2.0;
 
             // Detección de pickup (radio 1.5u)
-            const dist = drop.mesh.position.distanceTo(playerPos);
-            if (dist < 1.5) {
+            const distSq = drop.mesh.position.distanceToSquared(playerPos);
+            if (distSq < 2.25) {
                 inventorySystem.addItem(drop.itemType, drop.count);
                 this._scene.remove(drop.mesh);
                 drop.mesh.geometry.dispose();

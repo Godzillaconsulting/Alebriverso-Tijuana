@@ -1,6 +1,6 @@
 import './style.css';
 import * as THREE from 'three';
-import { loadLevelFromJson, tiltPlatforms, movingPlatforms, hazardNodes } from './assets.js';
+import { loadLevelFromJson, tiltPlatforms, movingPlatforms, hazardNodes, collidables } from './assets.js';
 import { dynamicLights } from './propBuilder.js';
 import { initAudio, playBGM } from './audio.js';
 import { PlayerController } from './movement.js';
@@ -25,6 +25,7 @@ import { GlobalState } from './gameState.js';
 import { lootSystem } from './lootSystem.js';
 import { weaponUpgradeSystem } from './weaponUpgrades.js';
 import { ambientAudio } from './ambientAudio.js';
+import { CinematicsManager } from './cinematics.js';
 
 
 // Inicializar la Interfaz Next-Gen HUD 2D
@@ -142,6 +143,7 @@ window.alertBus        = alertBus;
 window.merchantSystem  = merchantSystem;
 window.player          = player;
 window.thirdPersonCamera = thirdPersonCamera; // Expose for Spine Torso IK
+window.cinematics      = new CinematicsManager(scene, thirdPersonCamera, player);
 
 // Conectar AlertBus al EnemyManager (inversión de dependencias)
 alertBus.register(enemyManager);
@@ -166,6 +168,17 @@ window.addEventListener('merchantBuy', (e) => {
 
 window.addEventListener('inventoryUseItem', (e) => {
     inventorySystem.useItem(e.detail.slotIndex);
+});
+
+// Cinematic Events
+window.addEventListener('bossFightStart', (e) => {
+    // Si la secuencia existe, la orquesta
+    // Buscamos al jefe actual en la escena si es necesario
+    let bossObj = null;
+    if (bossManager.bosses.length > 0) bossObj = bossManager.bosses[bossManager.bosses.length - 1];
+    
+    // Reproducir secuencia (por defecto la de Tezcatlipoca si no hay variantes)
+    window.cinematics.play('intro_tezcatlipoca', bossObj);
 });
 
 
@@ -197,6 +210,16 @@ document.addEventListener('keyup', (e) => {
 
 // Bridge: every system dispatches 'cameraShake' with {intensity, duration}
 // We convert to the new trauma-based API (intensity maps to 0..1 trauma).
+window.addEventListener('cameraUnderwater', (e) => {
+    if (e.detail.isUnderwater) {
+        scene.fog.color.setHex(0x0a1e3f);
+        scene.fog.density = 0.04;
+    } else {
+        scene.fog.color.setHex(0x6495ED);
+        scene.fog.density = 0.005;
+    }
+});
+
 window.addEventListener('cameraShake', (e) => {
     const raw = e.detail?.intensity ?? 1.0;
     const trauma = THREE.MathUtils.clamp(raw / 3.0, 0, 1);
@@ -221,6 +244,14 @@ document.addEventListener('keydown', (e) => {
 });
 document.addEventListener('keyup', (e) => {
     if (e.code === 'KeyC') thirdPersonCamera.toggleFirstPerson(false);
+});
+
+// TARGET CYCLE (Tab Key)
+document.addEventListener('keydown', (e) => {
+    if (e.code === 'Tab' && isPlaying) {
+        e.preventDefault();
+        thirdPersonCamera.cycleTarget(enemyManager.enemies);
+    }
 });
 
 // === RE4 QUICK TURN (Q) ===
@@ -269,13 +300,13 @@ document.addEventListener('click', () => {
 document.addEventListener('keydown', (e) => {
     if ((e.code === 'ShiftLeft' || e.code === 'ShiftRight') && isPlaying) {
         let closest = null;
-        let minDist = 25;
+        let minDistSq = 625; // 25 * 25
         if (enemyManager && enemyManager.enemies) {
             enemyManager.enemies.forEach(en => {
                 const mesh = en.mesh || en;
-                const dist = player.mesh.position.distanceTo(mesh.position);
-                if (dist < minDist) {
-                    minDist = dist;
+                const distSq = player.mesh.position.distanceToSquared(mesh.position);
+                if (distSq < minDistSq) {
+                    minDistSq = distSq;
                     closest = mesh;
                 }
             });
@@ -284,9 +315,9 @@ document.addEventListener('keydown', (e) => {
         if (gameManager && gameManager.switches) {
             gameManager.switches.forEach(sw => {
                 if (!sw.isPressed) {
-                    const dist = player.mesh.position.distanceTo(sw.mesh.position);
-                    if (dist < minDist) {
-                        minDist = dist;
+                    const distSq = player.mesh.position.distanceToSquared(sw.mesh.position);
+                    if (distSq < minDistSq) {
+                        minDistSq = distSq;
                         closest = sw.mesh;
                     }
                 }
@@ -376,6 +407,10 @@ function animate() {
             // L2 = AimDownSights
             if (pad.buttons[6]?.pressed) thirdPersonCamera.setAiming(true);
             else if (!document.pointerLockElement) thirdPersonCamera.setAiming(false);
+            
+            // L1 = Target Cycle
+            const l1Pressed = pad.buttons[4]?.pressed;
+            if (l1Pressed && !lastGamepadButtons[4]) thirdPersonCamera.cycleTarget(enemyManager.enemies);
 
             // R1 = Quick Turn
             const r1Pressed = pad.buttons[5]?.pressed;
@@ -417,6 +452,14 @@ function animate() {
         
         bossManager.update(delta, player, weaponManager);
         weaponManager.update(delta);
+
+        // === PUNTERO LÁSER VOLUMÉTRICO (RE4 Parity) ===
+        if (weaponManager && typeof weaponManager.updateLaser === 'function') {
+            const aimOrigin = player.mesh.position.clone().add(new THREE.Vector3(0.3, 1.2, 0).applyQuaternion(player.mesh.quaternion));
+            const cameraDir = new THREE.Vector3();
+            thirdPersonCamera.camera.getWorldDirection(cameraDir);
+            weaponManager.updateLaser(aimOrigin, cameraDir, thirdPersonCamera.isAiming, collidables);
+        }
         vfxManager.update(delta);
         MaterialManager.update(delta);
         weatherSystem.update(delta);
@@ -493,7 +536,7 @@ function animate() {
                         vfxManager.createDustPuff(h.mesh.position, 30);
                     }
                     // Chequeo de daño al jugador (Bounding Sphere bruto)
-                    if (h.mesh.position.distanceTo(player.mesh.position) < 3.5) {
+                    if (h.mesh.position.distanceToSquared(player.mesh.position) < 12.25) {
                         player.takeDamage(h.mesh.position);
                         window.dispatchEvent(new CustomEvent('cameraShake', { detail: { duration: 0.6, intensity: 2.5 } }));
                     }

@@ -98,6 +98,14 @@ export class ThirdPersonCamera {
         this._bobPhase  = 0.0;
         this.BOB_FREQ   = 6.5;  // cycles per second at full speed
         this.BOB_AMP    = 0.06; // max vertical displacement (meters)
+        
+        // ─────────────────────────────────────────────────────
+        // CROSS-TEAM MODIFIERS & SYSTEMS
+        // ─────────────────────────────────────────────────────
+        this.isUnderwater = false;
+        this.cinematicSpline = null;
+        this.cinematicTime = 0;
+        this.cinematicDuration = 1;
     }
 
     // ── Private: build letterbox DOM elements ─────────────────
@@ -146,6 +154,51 @@ export class ThirdPersonCamera {
     // ── AIMING & QUICK TURN ────────────────────────────────────
     setAiming(isAiming) {
         this.isAiming = isAiming;
+        
+        // Visual Reticle overlay (Laser Sight)
+        if (!this._reticle) {
+            this._reticle = document.createElement('div');
+            this._reticle.style.cssText = "position:absolute; top:50%; left:50%; width:10px; height:10px; transform:translate(-50%,-50%); border-radius:50%; border:2px solid red; background:rgba(255,0,0,0.5); pointer-events:none; z-index:1000; box-shadow: 0 0 8px red, 0 0 15px currentColor; display:none; transition: all 0.15s ease;";
+            document.body.appendChild(this._reticle);
+        }
+        this._reticle.style.display = isAiming ? 'block' : 'none';
+    }
+
+    applyRecoil(verticalKick = 0.05) {
+        this.pitch += verticalKick;
+        this.pitch = THREE.MathUtils.clamp(this.pitch, this.PITCH_MIN, this.PITCH_MAX);
+    }
+
+    // ── CROSS TEAM SYNERGIES ───────────────────────────────────
+    cycleTarget(enemiesList) {
+        if (!enemiesList || enemiesList.length === 0) return;
+        if (!this.target) return;
+        const playerPos = this.target.position;
+        // Filter valid enemies (alive, close enough) and sort by distance for predictable cycling
+        const valid = enemiesList.map(e => e.mesh || e)
+            .filter(mesh => typeof mesh.userData.hp === 'undefined' || mesh.userData.hp > 0)
+            .filter(mesh => mesh.position.distanceTo(playerPos) < 30)
+            .sort((a, b) => a.position.distanceToSquared(playerPos) - b.position.distanceToSquared(playerPos));
+        
+        if (valid.length === 0) {
+            this.lockOnTarget = null;
+            return;
+        }
+
+        // Find next target
+        let currentIdx = valid.indexOf(this.lockOnTarget);
+        currentIdx = (currentIdx + 1) % valid.length;
+        this.lockOnTarget = valid[currentIdx];
+    }
+
+    playCinematicTrack(points, lookAts, duration) {
+        if (points.length < 2) return;
+        this.cinematicSpline = new THREE.CatmullRomCurve3(points);
+        this.cinematicLookAtSpline = new THREE.CatmullRomCurve3(lookAts);
+        this.cinematicTime = 0;
+        this.cinematicDuration = duration;
+        // Mute input temporarily
+        this.target = null;
     }
 
     quickTurn() {
@@ -189,8 +242,10 @@ export class ThirdPersonCamera {
         if (this.lockOnTarget) return; // Under lock-on: no manual yaw
 
         // Delegate horizontal rotation to the PLAYER BODY (RE4 core)
-        // Aiming reduces sensitivity by 50% for precision
-        const sensMult = this.isAiming ? 0.4 : 1.0;
+        // Aiming reduces sensitivity by 50% for precision. Water reduces by another 40%.
+        let sensMult = this.isAiming ? 0.4 : 1.0;
+        if (this.isUnderwater) sensMult *= 0.6;
+        
         const invX = this.invertX ? -1 : 1;
         const invY = this.invertY ? -1 : 1;
 
@@ -200,11 +255,29 @@ export class ThirdPersonCamera {
 
         // Vertical tilt is camera-only
         this.pitch -= dy * this.senY * sensMult * invY;
-        this.pitch  = THREE.MathUtils.clamp(this.pitch, this.PITCH_MIN, this.PITCH_MAX);
+        const PITCH_CEILING = this.isUnderwater ? -0.1 : this.PITCH_MAX; // Lock looking straight up in water
+        this.pitch  = THREE.MathUtils.clamp(this.pitch, this.PITCH_MIN, PITCH_CEILING);
     }
 
     // -------------------------------------------------------
     update(dt) {
+        // ── CINEMATIC OVERRIDE ────────────────────────────────
+        if (this.cinematicSpline) {
+            this.cinematicTime += dt;
+            const t = THREE.MathUtils.clamp(this.cinematicTime / this.cinematicDuration, 0, 1);
+            const pos = this.cinematicSpline.getPoint(t);
+            const look = this.cinematicLookAtSpline.getPoint(t);
+            this.currentPosition.copy(pos);
+            this.currentLookAt.copy(look);
+            this.camera.position.copy(pos);
+            this.camera.lookAt(look);
+            if (t >= 1.0) {
+                this.cinematicSpline = null;
+                window.dispatchEvent(new CustomEvent('cinematicEnd'));
+            }
+            return;
+        }
+
         if (!this.target) return;
 
         // ── 0. FEATURE 1: CHECK CAMERA ZONES ──────────────────
@@ -258,15 +331,24 @@ export class ThirdPersonCamera {
 
         }
         
-        // Narrow the FOV for that RE4 "weapon ready" feel
+        // ── 1.5. UNDERWATER MODIFIERS ─────────────────────────
+        const currentlyUnderwater = this.target.userData._inWater === true;
+        if (currentlyUnderwater !== this.isUnderwater) {
+            this.isUnderwater = currentlyUnderwater;
+            window.dispatchEvent(new CustomEvent('cameraUnderwater', { detail: { isUnderwater: this.isUnderwater } }));
+        }
+        
+        const waterFOVPenalty = this.isUnderwater ? 12 : 0;
+
+        // Narrow the FOV for that RE4 "weapon ready" feel + Water Warp
         if (this.lockOnTarget || this.isAiming) {
             this.camera.fov = THREE.MathUtils.lerp(
-                this.camera.fov, this.AIM_FOV, dt * 6
+                this.camera.fov, this.AIM_FOV + waterFOVPenalty, dt * 6
             );
         } else {
             // Restore FOV when not aiming
             this.camera.fov = THREE.MathUtils.lerp(
-                this.camera.fov, this.BASE_FOV, dt * 4
+                this.camera.fov, this.BASE_FOV + waterFOVPenalty, dt * 4
             );
         }
         this.camera.updateProjectionMatrix();
@@ -303,16 +385,19 @@ export class ThirdPersonCamera {
         rayDir.divideScalar(rawDist); // normalize in-place
 
         const ray = new THREE.Raycaster(headPos, rayDir, 0.15, rawDist);
-        const hits = ray.intersectObjects(collidables, false);
+        // === RE4 2004 #10.1: RECURSIVE RAYCASTING ===
+        // Must check children because walls might be inside Groups (GLTF architecture)
+        const hits = ray.intersectObjects(collidables, true);
 
         // Desired arm length: full length or clipped to wall hit
         let desiredArm = rawDist;
         if (hits.length > 0) {
-            desiredArm = Math.max(0.4, hits[0].distance - 0.25);
+            // Push camera further away from the wall to prevent near-plane clipping (0.4 offset)
+            desiredArm = Math.max(0.1, hits[0].distance - 0.45);
         }
 
         // Spring-smooth the arm so the camera doesn't teleport
-        const armSpring = hits.length > 0 ? 0.25 : dt * 4; // fast clip-in, slow recovery
+        const armSpring = hits.length > 0 ? 0.8 : dt * 3.5; // fast clip-in, slow recovery
         this.currentArm = THREE.MathUtils.lerp(this.currentArm, desiredArm, armSpring);
 
         // Rebuild position with clipped arm

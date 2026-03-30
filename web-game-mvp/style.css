@@ -100,25 +100,108 @@ body.cinematic-bars {
     width: 100%;
 }
 
-/* Sistema Cartesiano de Vidas (Corazones) */
+/* --- HIGH-FIDELITY AZTEC HEALTH GAUGE (RE4 STYLE) --- */
 #hp-display {
     display: flex;
-    gap: 15px;
+    align-items: center;
+    position: relative;
+    margin-top: -10px;
 }
 
-.heart {
-    width: 45px;
-    height: 45px;
-    background: radial-gradient(circle at 30% 30%, #4aff9a, #008f39);
-    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.2s;
-    filter: drop-shadow(0 0 10px rgba(0, 255, 100, 0.6));
+.aztec-hud-wrapper {
+    position: relative;
+    width: 140px;
+    height: 120px;
+    display: flex;
+    align-items: center;
 }
 
-.heart.empty {
-    background: #222;
-    filter: drop-shadow(0 0 2px rgba(255,0,0,0.5));
-    transform: scale(0.85);
+.aztec-ring-svg {
+    transform: rotate(-90deg); /* Empezar desde arriba */
+    position: absolute;
+    left: 0;
+    top: 0;
+    filter: drop-shadow(0 0 8px rgba(0,255,100,0.5));
+}
+
+.ring-bg {
+    fill: rgba(0,0,0,0.6);
+    stroke: #222;
+    stroke-width: 8;
+}
+
+.ring-fill {
+    fill: none;
+    stroke: #00ff66; /* Verde Jade */
+    stroke-width: 8;
+    stroke-linecap: round;
+    /* 2 * PI * 50 = 314.159 */
+    stroke-dasharray: 314.159;
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), stroke 0.3s ease;
+}
+
+/* Efectos de borde precolombinos */
+.ring-border {
+    fill: none;
+    stroke: #d4af37; /* Oro Mexica */
+    stroke-width: 1.5;
+    stroke-dasharray: 4 6;
+    opacity: 0.8;
+}
+
+/* Retrato en el centro (Similar a DOOM / RE4) */
+.hud-portrait {
+    position: absolute;
+    left: 20px;
+    top: 20px;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    /* Fondo radial para parecer un medallón reluciente */
+    background: radial-gradient(circle at center, #1a2a1a 0%, #000 100%);
+    box-shadow: inset 0 0 15px rgba(0, 255, 100, 0.3);
+    overflow: hidden;
+}
+
+/* El texto de vida a la derecha del círculo */
+.hp-text-box {
+    position: absolute;
+    left: 130px;
+    top: 35px;
+    background: linear-gradient(90deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+    padding: 5px 40px 5px 15px;
+    border-left: 3px solid #00ff66;
+    font-family: 'Outfit', sans-serif;
+    transition: border-color 0.3s;
+}
+
+#hp-fraction {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 2px 2px 0 #000, 0 0 10px rgba(0,255,100,0.8);
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+#hp-val {
+    font-size: 2.5rem;
+}
+
+#hp-max {
+    font-size: 1.5rem;
+    color: #aaa;
+}
+
+.hp-label {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.7rem;
+    color: #d4af37;
+    letter-spacing: 2px;
+    margin-top: -2px;
+    text-shadow: 1px 1px 0 #000;
 }
 
 /* Contador de Obsidiana HUD */

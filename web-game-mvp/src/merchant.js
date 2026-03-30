@@ -13,10 +13,10 @@ import { inventorySystem } from './inventory.js';
 // ─── CATÁLOGO POR DEFECTO ─────────────────────────────────────────────────────
 // Puede ser sobreescrito por el JSON del nivel: npc.catalog = [...]
 export const DefaultCatalog = [
-    { itemType: 'health_herb',    price: 5,  stock: 10, label: 'Hierba Medicinal'    },
-    { itemType: 'ammo_light',     price: 3,  stock: 20, label: 'Luz Solar (x5)'     },
-    { itemType: 'obsidian_shard', price: 8,  stock: 10, label: 'Obsidiana (x5)'     },
-    { itemType: 'star_fragment',  price: 15, stock: 3,  label: 'Fragmento de Jade'  },
+    { itemType: 'bolillo',        price: 5,  stock: 10, label: 'Bolillo Curativo' },
+    { itemType: 'ammo_light',     price: 3,  stock: 20, label: 'Luz Solar (Munición Atlatl) x5' },
+    { itemType: 'obsidian_shard', price: 8,  stock: 10, label: 'Obsidiana (Munición Macuahuitl) x5' },
+    { itemType: 'star_fragment',  price: 15, stock: 3,  label: 'Fragmento de Jade Cósmico' },
 ];
 
 class MerchantSystem {

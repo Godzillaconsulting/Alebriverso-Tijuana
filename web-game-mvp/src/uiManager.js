@@ -325,15 +325,26 @@ export class UIManager {
     }
     
     renderHearts(currentHP) {
-        if (!this.hpContainer) return;
-        this.hpContainer.innerHTML = '';
+        // Obsoletizado: Ahora actualizamos el HUD Azteca Circular SVG
+        const ringFill = document.getElementById('hp-ring-fill');
+        const hpVal    = document.getElementById('hp-val');
+        const hpMax    = document.getElementById('hp-max');
         
-        for(let i = 0; i < this.maxHP; i++) {
-            const heart = document.createElement('div');
-            // Vida actual dicta si el corazón es de color o filtro grisáceo (Estilo Gema Hexagonal)
-            heart.className = i < currentHP ? 'heart full' : 'heart empty';
-            this.hpContainer.appendChild(heart);
+        if (ringFill) {
+            // Radio 50 -> Perímetro ~314.159
+            const perimeter = 314.159;
+            const fraction = Math.max(0, currentHP) / this.maxHP;
+            const offset = perimeter * (1 - fraction);
+            ringFill.style.strokeDashoffset = offset;
+            
+            // Color Shift (Verde -> Amarillo -> Rojo como RE4)
+            if (fraction > 0.5) ringFill.style.stroke = '#00ff66';
+            else if (fraction > 0.25) ringFill.style.stroke = '#ffcc00';
+            else ringFill.style.stroke = '#ff3333';
         }
+        
+        if (hpVal) hpVal.innerText = Math.max(0, currentHP);
+        if (hpMax) hpMax.innerText = this.maxHP;
     }
     
     updateHP(hp) {

@@ -33,7 +33,26 @@
             <span class="text" id="star-count">0</span>
           </div>
           
-          <div id="hp-display" style="display: none;"></div>
+          <div id="hp-display" style="display: none;">
+            <div class="aztec-hud-wrapper">
+                <svg width="120" height="120" viewBox="0 0 120 120" class="aztec-ring-svg">
+                   <!-- Anillo de fondo (Oscuro) -->
+                   <circle cx="60" cy="60" r="50" class="ring-bg"></circle>
+                   <!-- Anillo de vida (Glow Verde/Rojo) -->
+                   <circle cx="60" cy="60" r="50" class="ring-fill" id="hp-ring-fill"></circle>
+                   <!-- Decoración Mesoamericana (Marco) -->
+                   <circle cx="60" cy="60" r="56" class="ring-border"></circle>
+                   <circle cx="60" cy="60" r="44" class="ring-border"></circle>
+                </svg>
+                <!-- Retrato Central (Estilo RE4 Leon) -->
+                <div class="hud-portrait"></div>
+                <!-- Texto de HP Estilizado -->
+                <div class="hp-text-box">
+                   <div id="hp-fraction"><span id="hp-val">3</span>/<span id="hp-max">3</span></div>
+                   <div class="hp-label">ALMA</div>
+                </div>
+            </div>
+          </div>
           <div id="key-display" style="display: none;"></div>
         </div>
 

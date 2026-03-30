@@ -98,13 +98,189 @@ export class WeaponManager {
         this.portalMatMoon = MaterialManager.getMaterial({ color: 0x00eaff, emissive: 0x0088ff, emissiveIntensity: 1.5, metalness: 0.8, roughness: 0.1 });
         this.activePortals = [null, null]; // [Sol, Luna]
         
-        // Luces por tipo (1 por tipo, sin clonar cada disparo)
         this.lightSun  = new THREE.PointLight(0xff5500, 2.0, 15);
         this.lightMoon = new THREE.PointLight(0x0088ff, 2.0, 15);
+
+        // === PUNTERO LÁSER VOLUMÉTRICO (RE4 Parity) ===
+        this.laserMat = new THREE.MeshBasicMaterial({ 
+            color: 0xff0000, 
+            transparent: true, 
+            opacity: 0.8, 
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        this.laserGeo = new THREE.CylinderGeometry(0.012, 0.012, 1, 8);
+        this.laserGeo.translate(0, 0.5, 0); // Pivote en la base
+        this.laserGeo.rotateX(Math.PI / 2); // Orientar al frente en el eje Z Local
+        this.laserMesh = new THREE.Mesh(this.laserGeo, this.laserMat);
+        this.laserMesh.visible = false;
+        this.scene.add(this.laserMesh);
+
+        // Canvas PBR Red Dot procedural para no depender de texturas externas
+        const canvas = document.createElement('canvas');
+        canvas.width = 32; canvas.height = 32;
+        const ctx = canvas.getContext('2d');
+        const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+        gradient.addColorStop(0, 'rgba(255, 50, 50, 1)');
+        gradient.addColorStop(0.3, 'rgba(255, 0, 0, 0.9)');
+        gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(16, 16, 16, 0, Math.PI * 2);
+        ctx.fill();
+        
+        const dotTex = new THREE.CanvasTexture(canvas);
+        const dotMat = new THREE.SpriteMaterial({ 
+            map: dotTex, color: 0xff0000, 
+            blending: THREE.AdditiveBlending, 
+            depthTest: false, depthWrite: false 
+        });
+        this.laserDot = new THREE.Sprite(dotMat);
+        this.laserDot.scale.set(0.6, 0.6, 1.0);
+        this.laserDot.visible = false;
+        this.scene.add(this.laserDot);
+    }
+
+    updateLaser(origin, direction, isAiming, collidables) {
+        if (!isAiming) {
+            this.laserMesh.visible = false;
+            this.laserDot.visible = false;
+            return;
+        }
+
+        this.laserMesh.visible = true;
+        this.laserDot.visible = true;
+
+        this.laserMesh.position.copy(origin);
+        const targetPos = origin.clone().add(direction);
+        this.laserMesh.lookAt(targetPos);
+
+        // Raycast continuo RE4 style limit to 150m
+        const ray = new THREE.Raycaster(origin, direction, 0, 150);
+        const hits = ray.intersectObjects(collidables, true);
+
+        let hitDist = 150;
+        let hitPoint = origin.clone().addScaledVector(direction, 150);
+
+        if (hits.length > 0) {
+            hitDist = hits[0].distance;
+            hitPoint = hits[0].point;
+        }
+
+        // Scale Z controls the length because cylinder was rotated PI/2 on X
+        this.laserMesh.scale.set(1, 1, hitDist);
+
+        // Position Dot slightly backward to avoid Z-fighting
+        this.laserDot.position.copy(hitPoint).addScaledVector(direction, -0.05);
     }
 
     fireEnergySphere(origin, forwardDirection, type = 0) {
         this.pool.fire(origin, forwardDirection, type, type === 0 ? this.lightSun : this.lightMoon);
+    }
+
+    fireHitscan(origin, forwardDirection, type = 0, collidables) {
+        // Muzzle flash / Sparks at the origin
+        if (this.vfxManager) {
+            this.vfxManager.createSparks(origin.clone().add(forwardDirection), 5);
+        }
+
+        const ray = new THREE.Raycaster(origin, forwardDirection, 0, 150);
+        let hitEnemy = null;
+        let hitBone = null;
+        let minEnemyDist = 150;
+
+        // 1. Detectar IA y sus Hitboxes individuales
+        if (this.enemyManager && this.enemyManager.enemies) {
+            for (const enemy of this.enemyManager.enemies) {
+                if (!enemy || enemy.userData.state === 'DEAD' || enemy.userData.spriteType === 'mercader') continue;
+                
+                const b = enemy.userData.bones;
+                if (!b) {
+                    const hitGroup = ray.intersectObject(enemy, true);
+                    if (hitGroup.length > 0 && hitGroup[0].distance < minEnemyDist) {
+                        minEnemyDist = hitGroup[0].distance;
+                        hitEnemy = enemy;
+                        hitBone = 'body';
+                    }
+                    continue;
+                }
+
+                const targets = [b.body, b.eyeGroup, b.legL, b.legR].filter(x => x);
+                if (enemy.userData.spritePlane) targets.push(enemy.userData.spritePlane);
+
+                const hits = ray.intersectObjects(targets, true);
+                if (hits.length > 0 && hits[0].distance < minEnemyDist) {
+                    minEnemyDist = hits[0].distance;
+                    hitEnemy = enemy;
+                    const objHit = hits[0].object;
+                    if (objHit === b.legL || objHit === b.legR || objHit.parent === b.legL || objHit.parent === b.legR) hitBone = 'leg';
+                    else if (objHit === b.eyeGroup || objHit.parent === b.eyeGroup) hitBone = 'head';
+                    else hitBone = 'body';
+                }
+            }
+        }
+
+        // 2. Detectar Entorno Arquitectónico
+        let wallDist = 150;
+        let wallHitPoint = origin.clone().addScaledVector(forwardDirection, 150);
+        let wallNormal = new THREE.Vector3(0, 1, 0);
+
+        if (collidables) {
+            const wallHits = ray.intersectObjects(collidables, true);
+            if (wallHits.length > 0) {
+                wallDist = wallHits[0].distance;
+                wallHitPoint = wallHits[0].point;
+                wallNormal = wallHits[0].face ? wallHits[0].face.normal.clone().transformDirection(wallHits[0].object.matrixWorld).normalize() : new THREE.Vector3(0, 1, 0);
+            }
+        }
+
+        // 3. Resolución Balística
+        if (wallDist < minEnemyDist) {
+            // Muralla
+            if (this.vfxManager) {
+                this.vfxManager.createDustPuff(wallHitPoint, 10);
+                this.vfxManager.createSparks(wallHitPoint, 15);
+                this.vfxManager.createDecal(wallHitPoint, wallNormal, 'bullet');
+            }
+            this.spawnPortal(wallHitPoint, wallNormal, type);
+        } else if (hitEnemy) {
+            // Enemigo
+            const enemyHitPoint = origin.clone().addScaledVector(forwardDirection, minEnemyDist);
+            if (this.vfxManager) {
+                this.vfxManager.createSparks(enemyHitPoint, hitBone === 'head' ? 30 : 15, hitBone === 'head' ? 0xff0000 : 0xffaa00);
+            }
+
+            const stats = window.weaponUpgradeSystem ? window.weaponUpgradeSystem.getStats() : { damage: 1.0 };
+            let dmg = stats.damage * (type === 0 ? 1 : 1.5);
+            if (hitBone === 'head') dmg *= 1.5; // Mutliplicador de crítico por Headshot!
+
+            hitEnemy.userData.hp -= dmg;
+
+            if (hitEnemy.userData.hp <= 0) {
+                hitEnemy.userData.state = 'DEAD';
+                if (this.vfxManager) {
+                    this.vfxManager.createDustPuff(hitEnemy.position, 15);
+                    this.vfxManager.createSparks(hitEnemy.position, 25);
+                }
+                if (window.lootSystem) window.lootSystem.dropLoot(hitEnemy.userData.spriteType || 'aldeano_azteca', hitEnemy.position.clone());
+            } else {
+                // Stagger Físico Locacional
+                if (hitBone === 'leg') {
+                    hitEnemy.userData.state = 'STAGGER';
+                    hitEnemy.userData.staggerTimer = 3.0; // Largo por disparo en pierna
+                } else {
+                    hitEnemy.userData.hitCount++;
+                    hitEnemy.userData.hitCountResetTimer = 1.5;
+                    const staggerThreshold = hitEnemy.userData.staggerThreshold || 2;
+                    if (hitEnemy.userData.hitCount >= staggerThreshold || hitBone === 'head') {
+                        hitEnemy.userData.state = 'STAGGER';
+                        hitEnemy.userData.staggerTimer = 2.0;
+                        hitEnemy.userData.hitCount = 0;
+                    }
+                }
+            }
+            window.dispatchEvent(new CustomEvent('cameraShake', { detail: { duration: 0.2, intensity: 1.0 } }));
+        }
     }
 
     update(delta) {
@@ -162,6 +338,8 @@ export class WeaponManager {
                     if (this.vfxManager) {
                         this.vfxManager.createDustPuff(hitPoint, 10);
                         this.vfxManager.createSparks(hitPoint, 15);
+                        // === RE4 2004 #10.4: DECALS PERSISTENTES ===
+                        this.vfxManager.createDecal(hitPoint, normal, 'bullet');
                     }
                     this.spawnPortal(hitPoint, normal, pool.types[i]);
                 }

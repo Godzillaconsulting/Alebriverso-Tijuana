@@ -27,8 +27,24 @@ export function createTree(position) {
     
     group.add(trunk, crown);
     group.traverse(c => { if(c.isMesh) c.castShadow = true; });
-    if (position) group.position.set(position.x, position.y, position.z);
-    return group;
+    
+    // === RE4 2004 #10.3: LOD SYSTEM ===
+    const lod = new THREE.LOD();
+    lod.addLevel(group, 0); // Nivel 0 (Alta calidad: Tronco + 7 Ramas = 8 Draw Calls)
+    
+    // Nivel 1 (Baja calidad a > 40m: 1 Caja verde sólida = 1 Draw Call, sin sombras)
+    const proxyMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(2, 9, 2),
+        MaterialManager.getMaterial({ color: 0x1B4D3E, roughness: 1.0 })
+    );
+    proxyMesh.position.y = 4.5;
+    const proxyGroup = new THREE.Group();
+    proxyGroup.add(proxyMesh);
+    
+    lod.addLevel(proxyGroup, 45); // Swap out for proxy box
+
+    if (position) lod.position.set(position.x, position.y, position.z);
+    return lod;
 }
 
 export function createTule(position) {
@@ -61,8 +77,21 @@ export function createPot(position) {
     
     group.add(base, top, neck);
     group.traverse(c => { if(c.isMesh) c.castShadow = true; });
-    if (position) group.position.set(position.x, position.y + 0.4, position.z);
-    return group;
+    
+    // LOD System for thousands of pots
+    const lod = new THREE.LOD();
+    lod.addLevel(group, 0);
+    
+    // Low poly proxy
+    const proxyMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(1.0, 1.2, 1.0),
+        clayMat
+    );
+    proxyMesh.position.y = 0.6;
+    lod.addLevel(proxyMesh, 25);
+    
+    if (position) lod.position.set(position.x, position.y + 0.4, position.z);
+    return lod;
 }
 
 export function createTeocalli(position) {

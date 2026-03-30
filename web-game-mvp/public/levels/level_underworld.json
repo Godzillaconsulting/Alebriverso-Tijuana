@@ -1,0 +1,141 @@
+{
+    "name": "Época III - El Inframundo de Mictlán",
+    "version": "1.0",
+    "playerSpawn": { "x": 0, "y": 2, "z": 0 },
+    "background": "#050000",
+    "fog": { "color": "#0a0101", "density": 0.05 },
+    "metadata": {
+        "portalMode": "single_use",
+        "weather": "ash"
+    },
+    "portals": [
+        {
+            "id": "regreso_calabozo",
+            "target": "/levels/level_calabozo.json",
+            "position": {"x": 0, "y": 2, "z": -15},
+            "size": {"width": 2, "height": 4, "depth": 1}
+        }
+    ],
+    "platforms": [
+        {
+            "id": "mictlan_inicio",
+            "type": "box",
+            "position": {"x": 0, "y": 0, "z": 0},
+            "size": {"width": 20, "height": 2, "depth": 20},
+            "color": "#110000",
+            "shader": "stone"
+        },
+        {
+            "id": "puente_magma",
+            "type": "box",
+            "position": {"x": 0, "y": -1, "z": 25},
+            "size": {"width": 4, "height": 1, "depth": 30},
+            "color": "#200a0a",
+            "shader": "stone"
+        },
+        {
+            "id": "rio_magma",
+            "type": "box",
+            "isLava": true,
+            "position": {"x": 0, "y": -5, "z": 25},
+            "size": {"width": 60, "height": 4, "depth": 40},
+            "color": "#ff3300"
+        },
+        {
+            "id": "plaza_sacrificios",
+            "type": "box",
+            "position": {"x": 0, "y": 0, "z": 60},
+            "size": {"width": 40, "height": 2, "depth": 40},
+            "color": "#1c1111",
+            "shader": "stone"
+        },
+        {
+            "id": "altar_jefe",
+            "type": "box",
+            "position": {"x": 0, "y": 2, "z": 100},
+            "size": {"width": 30, "height": 4, "depth": 30},
+            "color": "#0a0a0a",
+            "shader": "stone"
+        },
+        {
+            "id": "muro_sur",
+            "type": "box",
+            "position": {"x": 0, "y": 10, "z": -12},
+            "size": {"width": 20, "height": 20, "depth": 2},
+            "color": "#050000"
+        }
+    ],
+    "switches": [
+        {
+            "id": "sello_obsidiana_izq",
+            "targetDoor": "porton_jefe",
+            "position": {"x": -15, "y": 1.1, "z": 60}
+        },
+        {
+            "id": "sello_obsidiana_der",
+            "targetDoor": "porton_jefe",
+            "position": {"x": 15, "y": 1.1, "z": 60}
+        }
+    ],
+    "doors": [
+        {
+            "id": "porton_jefe",
+            "position": {"x": 0, "y": 5, "z": 82},
+            "size": {"width": 10, "height": 10, "depth": 2},
+            "color": "#220505",
+            "reqSwitches": 2
+        }
+    ],
+    "collectibles": [
+        {
+            "id": "Cacao_Puente",
+            "type": "obsidian",
+            "position": {"x": 0, "y": 2, "z": 25}
+        },
+        {
+            "id": "Bolillo_Secreto",
+            "type": "health_herb",
+            "position": {"x": -18, "y": 2, "z": 60}
+        }
+    ],
+    "enemies": [
+        {
+            "id": "arquero_mictlan_1",
+            "type": "goomba",
+            "spriteType": "guerrero_aguila",
+            "position": {"x": -10, "y": 1, "z": 35}
+        },
+        {
+            "id": "arquero_mictlan_2",
+            "type": "goomba",
+            "spriteType": "guerrero_aguila",
+            "position": {"x": 10, "y": 1, "z": 35}
+        },
+        {
+            "id": "horda_plaza_1",
+            "type": "goomba",
+            "spriteType": "guerrero_jaguar",
+            "position": {"x": 0, "y": 1, "z": 55}
+        },
+        {
+            "id": "jefe_quetzalcoatl",
+            "type": "tezcatlipoca",
+            "position": {"x": 0, "y": 10, "z": 100}
+        }
+    ],
+    "npcs": [
+        {
+            "id": "mercader_inframundo",
+            "position": {"x": 12, "y": 1, "z": 8},
+            "spriteType": "pochteca_mercader"
+        }
+    ],
+    "props": [
+        { "id": "vasija_1", "type": "pot", "position": {"x": -5, "y": 1, "z": 5} },
+        { "id": "antorcha_inframundo_1", "type": "torch", "position": {"x": -3, "y": 2, "z": 20} },
+        { "id": "antorcha_inframundo_2", "type": "torch", "position": {"x": 3, "y": 2, "z": 20} },
+        { "id": "antorcha_jefe_1", "type": "torch", "position": {"x": -10, "y": 6, "z": 90} },
+        { "id": "antorcha_jefe_2", "type": "torch", "position": {"x": 10, "y": 6, "z": 90} },
+        { "id": "save_payphone", "type": "payphone", "position": {"x": -10, "y": 1, "z": 8} }
+    ]
+}

@@ -52,12 +52,12 @@ export const waterZones = [];
 export const tiltPlatforms = [];
 export const movingPlatforms = []; // Rieles vectoriales
 
-// === SM64 ZONAS ESPECIALES ===
 export const lavaZones    = []; // { box: Box3 } — Muerte instantánea / knockback violento
 export const quicksandZones = []; // { box: Box3, sinkRate: float } — Hunde al jugador
 export const poleObjects  = []; // THREE.Mesh con userData.isPole = true
 export const hazardNodes  = []; // { mesh, type: 'pendulum'|'thwomp', params } — Objetos letales oscilantes
 export const waterSwitches = []; // { mesh, triggered, timer } — Botón Blue-Coin Timer
+export const payphones    = []; // { mesh } — Puntos de Guardado RE4 (Teléfono Público Mexicano)
 export const npcs          = []; // NPC estáticos con diálogo (futuro)
 
 export function clearLevelData() {
@@ -73,6 +73,7 @@ export function clearLevelData() {
     poleObjects.length = 0;
     hazardNodes.length = 0;
     waterSwitches.length = 0;
+    payphones.length = 0;
     npcs.length = 0;
     spatialGrid.clear(); // Purgar SpatialHashGrid al cambiar de nivel
     ambientAudio.clear(); // Purgar triggers de audio ambiental
@@ -383,7 +384,7 @@ export async function loadLevelFromJson(scene, gameManager, player, enemyManager
                 if (foe.type === 'goomba' && enemyManager) {
                     enemyManager.spawnGoomba(foe.position.x, foe.position.y, foe.position.z, foe.spriteType);
                 } else if (foe.type === 'tezcatlipoca' && bossManager) {
-                    bossManager.spawnTezcatlipoca(foe.position.x, foe.position.y, foe.position.z);
+                    bossManager.spawnQuetzalcoatl(foe.position.x, foe.position.y, foe.position.z);
                 }
             });
         }
@@ -405,6 +406,24 @@ export async function loadLevelFromJson(scene, gameManager, player, enemyManager
                     mesh.scale.set(2.5, 2.5, 2.5); // 2.5x más grande
                     mesh.position.y += 1.0;
                     mesh.userData.isMassive = true; // El modificador que el Arquitecto programó
+                }
+                else if (prop.type === 'payphone') {
+                    const phoneGrp = new THREE.Group();
+                    const stand = createBox(0.6, 1.8, 0.4, { color: 0xFCCB00, metalness: 0.3, roughness: 0.6 }); // Caja Amarilla
+                    const top = createBox(0.7, 0.2, 0.5, { color: 0x222222, metalness: 0.8, roughness: 0.2 });   // Visera
+                    top.position.y = 0.9 + 0.1;
+                    const phoneMesh = createBox(0.2, 0.4, 0.2, { color: 0x111111 }); // Bocina
+                    phoneMesh.position.set(0, 0.3, 0.25);
+                    phoneGrp.add(stand, top, phoneMesh);
+                    
+                    phoneGrp.position.set(prop.position.x, (prop.position.y || 0) + 0.9, prop.position.z);
+                    scene.add(phoneGrp);
+                    
+                    stand.position.copy(phoneGrp.position);
+                    collidables.push(stand);
+                    spatialGrid.insert(stand);
+                    payphones.push({ mesh: phoneGrp });
+                    return; // Retornamos para no duplicar add()
                 }
                 
                 if (mesh) {

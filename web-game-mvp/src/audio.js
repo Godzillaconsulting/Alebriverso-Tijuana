@@ -24,6 +24,7 @@ class SoundNode {
         this.priority   = priority; // Mayor = más importante (0 = ambiental, 10 = StarJingle)
         this.source     = null;     // AudioBufferSourceNode
         this.gainNode   = null;     // GainNode para volumen
+        this.pannerNode = null;     // PannerNode para Audio 3D Posicional
         this.isActive   = false;
         // Punteros de la lista doblemente enlazada
         this.prev       = null;
@@ -159,21 +160,29 @@ async function _loadBuffer(id, path) {
 }
 
 // ─────────────────────────────────────────────────────
-// REPRODUCTOR CENTRAL — Gestiona la DLL y prioridades
-// ─────────────────────────────────────────────────────
-function _playSound(id, priority = 5, volume = 0.5, synthFallback = null) {
+// Mapeo de control de concurrencia: Evita que 10 zombis rujan en el mismo instante y saturen los speakers
+const lastPlayedMap = new Map();
+
+function _playSound(id, priority = 5, volume = 0.5, position = null, synthFallback = null) {
     if (!ctx) return;
     if (ctx.state === 'suspended') ctx.resume();
+
+    // ANTI-BLOWOUT: Limitar ráfagas del mismo sonido a una vez cada 50ms (Crowd Control)
+    const now = ctx.currentTime;
+    const lastTime = lastPlayedMap.get(id) || 0;
+    if (now - lastTime < 0.05) {
+        // Demasiados de este ruido al mismo tiempo. Se descarta para no saturar el Master Bus.
+        return;
+    }
+    lastPlayedMap.set(id, now);
 
     // Si ya llenamos los 16 canales → expulsar el de menor prioridad
     if (activeList.size >= MAX_CHANNELS) {
         const victim = activeList.findLowestPriority();
         if (!victim || victim.priority >= priority) {
-            console.warn(`[AudioEngine] Channel saturado — descartando sonido ${id}`);
             return; // No vale la pena reproducir
         }
         _stopNode(victim);
-        console.info(`[AudioEngine] Expulsando canal de proridad baja: ${victim.id}`);
     }
 
     const buffer = audioCache.get(id);
@@ -190,8 +199,29 @@ function _playSound(id, priority = 5, volume = 0.5, synthFallback = null) {
 
         const source      = ctx.createBufferSource();
         source.buffer     = buffer;
-        source.connect(gainNode);
-        gainNode.connect(ctx.destination);
+        
+        let pannerNode = null;
+        
+        // === AUDIO 3D POSICIONAL (RE4/PS2 Grade HRTF) ===
+        if (position && position.isVector3) {
+            pannerNode = ctx.createPanner();
+            pannerNode.panningModel = 'HRTF';
+            pannerNode.distanceModel = 'exponential';
+            pannerNode.refDistance = 2.0;
+            pannerNode.maxDistance = 50.0;
+            pannerNode.rolloffFactor = 1.2;
+            
+            pannerNode.positionX.value = position.x;
+            pannerNode.positionY.value = position.y;
+            pannerNode.positionZ.value = position.z;
+            
+            source.connect(gainNode);
+            gainNode.connect(pannerNode);
+            pannerNode.connect(ctx.destination);
+        } else {
+            source.connect(gainNode);
+            gainNode.connect(ctx.destination);
+        }
 
         // Auto-limpieza al terminar (callback devuelve nodo al pool)
         source.onended = () => {
@@ -199,15 +229,17 @@ function _playSound(id, priority = 5, volume = 0.5, synthFallback = null) {
             node.isActive = false;
             node.source   = null;
             node.gainNode = null;
+            node.pannerNode = null;
             nodePool.push(node); // O(1) devolver al pool
         };
 
         node.source   = source;
         node.gainNode = gainNode;
+        node.pannerNode = pannerNode;
         activeList.push(node); // O(1) DLL push
         source.start(0);
     } else if (synthFallback) {
-        synthFallback(ctx);
+        synthFallback(ctx, position);
     }
 }
 
@@ -219,12 +251,19 @@ function _stopNode(node) {
             node.source.disconnect();
         }
         if (node.gainNode) node.gainNode.disconnect();
+        if (node.pannerNode) node.pannerNode.disconnect();
     } catch (_) {}
     activeList.remove(node);
     node.isActive = false;
     node.source   = null;
     node.gainNode = null;
+    node.pannerNode = null;
     nodePool.push(node); // Devolver al pool
+}
+
+// === EXPORT PUBLIC 3D AUDIO API ===
+export function play3DSound(id, position, priority = 5, volume = 1.0) {
+    _playSound(id, priority, volume, position);
 }
 
 // ─────────────────────────────────────────────────────
@@ -286,8 +325,8 @@ export function playLandSound() {
 }
 
 /** Sonido exclusivo de Red Coin — timbre más agudo y brillante */
-export function playRedCoinSound() {
-    _playSound('redcoin', 8, 0.7, (ctx) => {
+export function playRedCoinSound(position) {
+    _playSound('redcoin', 8, 0.7, position, (ctx, pos) => {
         // Campanilla Mexica (2 armónicos superpuestos)
         [880, 1320].forEach((freq, i) => {
             const osc  = ctx.createOscillator();
@@ -297,9 +336,82 @@ export function playRedCoinSound() {
             osc.frequency.exponentialRampToValueAtTime(freq * 1.5, ctx.currentTime + 0.3);
             gain.gain.setValueAtTime(0.12 - i * 0.04, ctx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-            osc.connect(gain); gain.connect(ctx.destination);
+            
+            if (pos) {
+                const pan = ctx.createPanner();
+                pan.panningModel = 'HRTF';
+                pan.distanceModel = 'exponential';
+                pan.refDistance = 1.0;
+                pan.maxDistance = 20.0;
+                pan.positionX.value = pos.x;
+                pan.positionY.value = pos.y;
+                pan.positionZ.value = pos.z;
+                osc.connect(gain); gain.connect(pan); pan.connect(ctx.destination);
+            } else {
+                osc.connect(gain); gain.connect(ctx.destination);
+            }
+            
             osc.start(); osc.stop(ctx.currentTime + 0.5);
         });
+    });
+}
+
+// === NEW: 3D ENEMY SOUNDS (Synthetic Fallbacks) ===
+
+export function playEnemyGrowl(position) {
+    _playSound('growl', 4, 1.0, position, (ctx, pos) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        // Roar grave sintético
+        osc.type = 'sawtooth';
+        osc.frequency.setValueCurveAtTime(new Float32Array([120, 80, 50, 30]), ctx.currentTime, 0.8);
+        
+        // Tremolo LFO for growl texture
+        const lfo = ctx.createOscillator();
+        lfo.type = 'sine';
+        lfo.frequency.value = 25; // 25Hz flutter
+        const lfoGain = ctx.createGain();
+        lfoGain.gain.value = 0.5;
+        lfo.connect(lfoGain);
+        lfoGain.connect(gain.gain);
+        lfo.start(); lfo.stop(ctx.currentTime + 0.8);
+
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+        
+        if (pos) {
+            const pan = ctx.createPanner();
+            pan.panningModel = 'HRTF'; pan.distanceModel = 'exponential';
+            pan.refDistance = 2.0; pan.maxDistance = 40.0; pan.rolloffFactor = 1.5;
+            pan.positionX.value = pos.x; pan.positionY.value = pos.y; pan.positionZ.value = pos.z;
+            osc.connect(gain); gain.connect(pan); pan.connect(ctx.destination);
+        } else {
+            osc.connect(gain); gain.connect(ctx.destination);
+        }
+        osc.start(); osc.stop(ctx.currentTime + 0.8);
+    });
+}
+
+export function playEnemyHit(position) {
+    _playSound('hit', 8, 1.0, position, (ctx, pos) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        // Squish/Hit asqueroso
+        osc.type = 'square';
+        osc.frequency.setValueCurveAtTime(new Float32Array([800, 200, 50]), ctx.currentTime, 0.2);
+        gain.gain.setValueAtTime(0.5, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+        
+        if (pos) {
+            const pan = ctx.createPanner();
+            pan.panningModel = 'HRTF'; pan.distanceModel = 'exponential';
+            pan.refDistance = 1.0; pan.maxDistance = 30.0;
+            pan.positionX.value = pos.x; pan.positionY.value = pos.y; pan.positionZ.value = pos.z;
+            osc.connect(gain); gain.connect(pan); pan.connect(ctx.destination);
+        } else {
+            osc.connect(gain); gain.connect(ctx.destination);
+        }
+        osc.start(); osc.stop(ctx.currentTime + 0.2);
     });
 }
 

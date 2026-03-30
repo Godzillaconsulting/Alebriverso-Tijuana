@@ -53,14 +53,38 @@ export class VFXManager {
         this.sparkPool = [];
         this.waterPool = [];
         
+        // Decal Ring Buffer (FIFO estricto para impactos)
+        this.decals = [];
+        this.decalIndex = 0;
+        this.MAX_DECALS = 50;
+        
         // Geometrías Compartidas
         const dustGeo = new THREE.BoxGeometry(0.6, 0.6, 0.6);
         const sparkGeo = new THREE.TetrahedronGeometry(0.5, 0);
         const dropGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+        const decalGeo = new THREE.PlaneGeometry(0.5, 0.5);
         
         const baseDustMat = new THREE.MeshBasicMaterial({ color: 0x667766, transparent: true });
         const baseSparkMat = new THREE.MeshBasicMaterial({ color: 0xffa500, transparent: true });
         const baseWaterMat = new THREE.MeshBasicMaterial({ color: 0xaaddff, transparent: true, opacity: 0.8 });
+        
+        // Materiales Estocásticos para Decals (Agujeros de bala negros y Sangre negra)
+        // Se usa polygonOffset para evitar Z-Fighting severo contra las paredes
+        const decalBulletMat = new THREE.MeshBasicMaterial({ color: 0x111111, transparent: true, opacity: 0.8, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1.0, polygonOffsetUnits: -1.0 });
+        const decalBloodMat = new THREE.MeshBasicMaterial({ color: 0x220000, transparent: true, opacity: 0.85, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1.0, polygonOffsetUnits: -1.0 });
+
+        this.decalMaterials = {
+            'bullet': decalBulletMat,
+            'blood': decalBloodMat
+        };
+
+        // Pre-instanciar 50 Decals inactivos
+        for (let i = 0; i < this.MAX_DECALS; i++) {
+            const mesh = new THREE.Mesh(decalGeo, decalBulletMat);
+            mesh.visible = false;
+            this.scene.add(mesh);
+            this.decals.push(mesh);
+        }
 
         // Pre-instanciar 200 mallas de polvo
         for (let i = 0; i < 200; i++) {
@@ -95,6 +119,23 @@ export class VFXManager {
 
     registerWindZone(min, max, force) {
         this.windZones.push({ min, max, force });
+    }
+
+    createDecal(pos, normal, type = 'bullet') {
+        const decal = this.decals[this.decalIndex];
+        this.decalIndex = (this.decalIndex + 1) % this.MAX_DECALS;
+        
+        decal.position.copy(pos);
+        // Orientar el plano estrictamente apuntando FUERA de la normal
+        const lookAtTarget = pos.clone().add(normal);
+        decal.lookAt(lookAtTarget);
+        
+        // Asignar material según tipo y ligera variación de tamaño (RE4 Vibe)
+        decal.material = this.decalMaterials[type] || this.decalMaterials['bullet'];
+        const s = type === 'blood' ? Math.random() * 1.5 + 1.0 : Math.random() * 0.4 + 0.6;
+        decal.scale.set(s, s, 1);
+        
+        decal.visible = true;
     }
 
     createDustPuff(pos, count = 4) {

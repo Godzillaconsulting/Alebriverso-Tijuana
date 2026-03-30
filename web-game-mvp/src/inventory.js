@@ -10,15 +10,16 @@
  */
 
 import { GlobalState } from './gameState.js';
+import { playCollectSound } from './audio.js';
 
 // ─── REGISTRO DE ÍTEMS ────────────────────────────────────────────────────────
 // Cada ítem tiene: name, icon (ruta PNG), description, stackable, maxStack
 export const ItemRegistry = new Map([
-    ['health_herb',       { name: 'Hierba Medicinal',   icon: '/textures/ui/icono_hierba_verde.png',      description: 'Restaura 3 puntos de vida.',    stackable: true,  maxStack: 9 }],
-    ['star_fragment',     { name: 'Fragmento de Jade',  icon: '/textures/ui/icono_fragmento_estrella.png', description: 'Fragmento de estrella antigua.', stackable: true,  maxStack: 5 }],
-    ['obsidian_shard',    { name: 'Cristal de Obsidiana', icon: '/textures/ui/icono_obsidiana.png',        description: 'Munición concentrada de sombra.', stackable: true, maxStack: 20 }],
-    ['ammo_light',        { name: 'Luz Solar',           icon: '/textures/ui/icono_municion.png',          description: 'Proyectil de energía solar.',   stackable: true,  maxStack: 30 }],
-    ['key',               { name: 'Llave Jade',          icon: '/textures/ui/icono_llave_jade.png',        description: 'Abre una puerta sellada.',      stackable: false, maxStack: 1 }],
+    ['bolillo',           { name: 'Bolillo Curativo',icon: '/textures/ui/icono_hierba_verde.png',      description: 'Hierba tradicional. Restaura 3 puntos de vida.',    stackable: true,  maxStack: 9 }],
+    ['star_fragment',     { name: 'Fragmento de Jade Cósmico',  icon: '/textures/ui/icono_fragmento_estrella.png', description: 'Gema antigua de inmenso valor.', stackable: true,  maxStack: 5 }],
+    ['obsidian_shard',    { name: 'Munición Macuahuitl', icon: '/textures/ui/icono_obsidiana.png',        description: 'Cristales afilados de obsidiana para el Macuahuitl Explosivo.', stackable: true, maxStack: 20 }],
+    ['ammo_light',        { name: 'Munición Atlatl',     icon: '/textures/ui/icono_municion.png',          description: 'Cápsulas de luz solar para tu arma principal.',   stackable: true,  maxStack: 30 }],
+    ['key',               { name: 'Llave Sellada',       icon: '/textures/ui/icono_llave_jade.png',        description: 'Abre una reliquia o puerta ancestral.',      stackable: false, maxStack: 1 }],
 ]);
 
 const GRID_COLS  = 3;
@@ -28,7 +29,7 @@ const GRID_SIZE  = GRID_COLS * GRID_ROWS; // 12 slots
 class InventorySystem {
     constructor() {
         // Parallel arrays para cache-friendliness:
-        // _types[i] = string del itemType ('health_herb') o null
+        // _types[i] = string del itemType ('bolillo') o null
         // _counts[i] = cantidad en ese slot
         this._types  = new Array(GRID_SIZE).fill(null);
         this._counts = new Uint8Array(GRID_SIZE);
@@ -110,7 +111,7 @@ class InventorySystem {
     }
 
     /**
-     * Usa un ítem (health_herb → restaura vida, etc.)
+     * Usa un ítem (bolillo → restaura vida, etc.)
      * @param {number} slotIndex
      */
     useItem(slotIndex) {
@@ -119,7 +120,7 @@ class InventorySystem {
 
         let consumed = false;
 
-        if (type === 'health_herb') {
+        if (type === 'bolillo') {
             // Curar al jugador (PlayerController)
             window.player.hp = Math.min(window.uiManager ? window.uiManager.maxHP : 3, window.player.hp + 3);
             
@@ -128,6 +129,7 @@ class InventorySystem {
             
             // Efecto visual/sonoro de curación (Opcional, RE4 Vibe)
             if (window.vfxManager) window.vfxManager.createSparks(window.player.mesh.position, 15, 0x00ff00);
+            playCollectSound();
             
             consumed = true;
         }

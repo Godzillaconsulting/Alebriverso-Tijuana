@@ -356,8 +356,9 @@ export class GameManager {
             // Checkeo Físico de Llaves (Proximidad)
             if (door.isLocked && !door.isOpen && this.keysCollected.includes(door.id)) {
                 // Si tienes la llave y chocas/te acercas mucho a la puerta de ese candado
-                const distToDoor = new THREE.Vector2(door.mesh.position.x, door.mesh.position.z).distanceTo(new THREE.Vector2(playerPosition.x, playerPosition.z));
-                if (distToDoor < 3.5) {
+                const dx = door.mesh.position.x - playerPosition.x;
+                const dz = door.mesh.position.z - playerPosition.z;
+                if (dx*dx + dz*dz < 12.25) {
                     door.isOpen = true; // Consumimos la cerradura visualmente
                     playLandSound();
                     if(this.vfxManager) this.vfxManager.createSparks(door.mesh.position, 15);

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { collidables, portals, grabbables, windZones, waterZones, lavaZones, quicksandZones, npcs, waterSwitches } from './assets.js';
+import { collidables, portals, grabbables, windZones, waterZones, lavaZones, quicksandZones, npcs, waterSwitches, payphones } from './assets.js';
 import { playJumpSound, playDoubleJumpSound, playLandSound, playFootstep } from './audio.js';
 import { buildProceduralAlebrije } from './AlebrijeProceduralMesh.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -266,10 +266,34 @@ export class PlayerController {
                     if (dialogEl && dialogEl.style.display === 'flex') {
                         window.dispatchEvent(new CustomEvent('dialogueNext'));
                     } else {
+                        // 1.5. Prioridad COMBATE: Remate a Enemigo Staggered (RE4 Parity)
+                        let staggerTarget = null;
+                        if (this.enemyManagerRef) {
+                            for (let i = 0; i < this.enemyManagerRef.enemies.length; i++) {
+                                const e = this.enemyManagerRef.enemies[i];
+                                if (e.userData.state === 'STAGGER' && this.mesh.position.distanceToSquared(e.position) < 12.0) {
+                                    staggerTarget = e; break;
+                                }
+                            }
+                        }
+                        
+                        if (staggerTarget) {
+                            // Suplex / Roundhouse Kick Invencible
+                            this.enemyManagerRef.hitEnemy(staggerTarget, this.mesh.position, true); // true = isRemateBlow
+                            if (this.vfxManager) this.vfxManager.createSparks(staggerTarget.position, 30);
+                            
+                            // Invulnerabilidad y Animación de poder
+                            this.invulnerableTimer = 1.5;
+                            this.velocity.y = 5.0; // Salto visual acrobático
+                            window.dispatchEvent(new CustomEvent('cameraShake', { detail: { duration: 0.3, intensity: 2.0 } }));
+                            
+                            return; // Terminamos aquí la interacción
+                        }
+
                         // 2. Prioridad: Iniciar Diálogo NPC cercano
                         let foundNPC = null;
                         for(let i = 0; i < npcs.length; i++) {
-                            if (this.mesh.position.distanceTo(npcs[i].mesh.position) < 3.5) {
+                            if (this.mesh.position.distanceToSquared(npcs[i].mesh.position) < 12.25) {
                                 foundNPC = npcs[i]; break;
                             }
                         }
@@ -278,8 +302,49 @@ export class PlayerController {
                             this.currentVelocity.set(0,0,0); // Freno inercial
                             this.keys.w = this.keys.a = this.keys.s = this.keys.d = false;
                         } else {
-                            // 3. Prioridad: Sistema Físico Cargar/Arrojar
-                            this.tryGrabOrThrow();
+                            // 2.5 Prioridad: Mercader (Billboard Pofesional)
+                            let foundMerchant = null;
+                            if (this.enemyManagerRef) {
+                                for(let i = 0; i < this.enemyManagerRef.enemies.length; i++) {
+                                    const e = this.enemyManagerRef.enemies[i];
+                                    if (e.userData.state !== 'DEAD' && e.userData.spriteType === 'mercader' && this.mesh.position.distanceToSquared(e.position) < 12.25) {
+                                        foundMerchant = e; break;
+                                    }
+                                }
+                            }
+                            
+                            if (foundMerchant) {
+                                window.dispatchEvent(new CustomEvent('merchantInteract', { detail: { npc: { mesh: foundMerchant } } }));
+                                this.currentVelocity.set(0,0,0);
+                                this.keys.w = this.keys.a = this.keys.s = this.keys.d = false;
+                            } else {
+                                // 2.7 Prioridad: Guardado (Payphones / RE4)
+                                let foundPhone = null;
+                                if (typeof payphones !== 'undefined') {
+                                    for(let i=0; i<payphones.length; i++) {
+                                        if (this.mesh.position.distanceToSquared(payphones[i].mesh.position) < 9.0) {
+                                            foundPhone = payphones[i]; break;
+                                        }
+                                    }
+                                }
+                                
+                                if (foundPhone && window.saveSystem) {
+                                    window.saveSystem.save(
+                                        0, // Sobreescribimos el slot automático por ahora o desencadenar UI (futuro)
+                                        this.mesh.position, 
+                                        window.GlobalState?.currentLevel || 'level1.json', 
+                                        window.GlobalState?.currentMissionID || 1,
+                                        window.inventorySystem?.getSnapshot() || {}
+                                    );
+                                    if (this.vfxManager) this.vfxManager.createSparks(foundPhone.mesh.position, 10, 0xFCCB00);
+                                    window.dispatchEvent(new CustomEvent('showNotification', { detail: { text: "¡Partida Guardada!", type: "success" } }));
+                                    this.currentVelocity.set(0,0,0);
+                                    this.keys.w = this.keys.a = this.keys.s = this.keys.d = false;
+                                } else {
+                                    // 3. Prioridad: Sistema Físico Cargar/Arrojar
+                                    this.tryGrabOrThrow();
+                                }
+                            }
                         }
                     }
                 }
@@ -383,35 +448,41 @@ export class PlayerController {
         const stats = window.weaponUpgradeSystem ? window.weaponUpgradeSystem.getStats() : { fireRate: 0.45 };
         this.aimTimer = stats.fireRate;
         
-        // === RE4 REMATE BLOW: Si un enemigo cercano está en STAGGER, le aplicamos 2x daño ===
-        if (this.enemyManagerRef) {
-            const attackPos = this.mesh.position;
-            const attackFwd = new THREE.Vector3(0, 0, -1).applyQuaternion(this.mesh.quaternion);
-            let closestEnemy = null, closestDist = Infinity;
-            for (const e of this.enemyManagerRef.enemies) {
-                const toEnemy = new THREE.Vector3().subVectors(e.position, attackPos);
-                const d = toEnemy.length();
-                if (d < 3.5 && d < closestDist && toEnemy.dot(attackFwd) > 0) {
-                    closestDist = d;
-                    closestEnemy = e;
-                }
-            }
-            if (closestEnemy) {
-                const isRemate = closestEnemy.userData.state === 'STAGGER';
-                this.enemyManagerRef.hitEnemy(closestEnemy, attackPos, isRemate);
-                if(this.vfxManager) this.vfxManager.createSparks(closestEnemy.position, isRemate ? 20 : 6);
-                if (isRemate) window.dispatchEvent(new CustomEvent('cameraShake', { detail: { duration: 0.25, intensity: 1.2 } }));
-                return;
-            }
-        }
-        // Proyectil si no hay enemigos en rango
+        // Proyectil si no hay enemigos en rango para remate
         if (this.weaponManager) {
-            const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.mesh.quaternion);
-            this.weaponManager.fireEnergySphere(this.mesh.position, forward, type);
-            if (this.onGround) {
-                this.velocity.y = 8.0; 
-                playJumpSound();
+            let forward, origin;
+            
+            if (window.thirdPersonCamera && window.thirdPersonCamera.isAiming) {
+                // === RE4: DISPARO HITSCAN EXACTO DONDE APUNTA LA CÁMARA/LÁSER ===
+                forward = new THREE.Vector3();
+                window.thirdPersonCamera.camera.getWorldDirection(forward);
+                
+                origin = this.mesh.position.clone().add(new THREE.Vector3(0.3, 1.2, 0).applyQuaternion(this.mesh.quaternion));
+                
+                // Disparo Instantáneo Raycast (Hitscan) con soporte para Hitboxes!
+                if (typeof this.weaponManager.fireHitscan === 'function') {
+                    this.weaponManager.fireHitscan(origin, forward, type, collidables);
+                } else {
+                    this.weaponManager.fireEnergySphere(origin, forward, type);
+                }
+                
+                // Shooting from stance -> Recoil fuerte a la cámara TPS
+                window.thirdPersonCamera.applyRecoil(0.04);
+                window.dispatchEvent(new CustomEvent('cameraShake', { detail: { duration: 0.1, intensity: 0.4 } }));
+            } else {
+                // Disparo de cadera o ataque Melee al vuelo (Sin Aim Stance)
+                forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.mesh.quaternion);
+                origin = this.mesh.position.clone().add(new THREE.Vector3(0, 1.2, 0));
+                
+                // Jump Kick / Ground Pound escape
+                if (this.onGround) {
+                    this.velocity.y = 8.0; 
+                    playJumpSound();
+                }
+                // Ataque en área corto tipo escopeta o energía usando la esfera normal
+                this.weaponManager.fireEnergySphere(origin, forward, type);
             }
+            
             if (this.vfxManager) this.vfxManager.createDustPuff(this.mesh.position, 6);
         }
     }
@@ -425,10 +496,23 @@ export class PlayerController {
         // === INTERACTION PROMPT HINT (RE4 Grade) ===
         if (window.uiManager) {
             let promptShown = false;
+            
+            // 0. Prioridad Combate: Remate a Enemigo en Stagger
+            if (this.enemyManagerRef) {
+                for (let i = 0; i < this.enemyManagerRef.enemies.length; i++) {
+                    const e = this.enemyManagerRef.enemies[i];
+                    if (e.userData.state === 'STAGGER' && this.mesh.position.distanceToSquared(e.position) < 12.0) {
+                        window.uiManager.showInteractionPrompt('Rematar');
+                        promptShown = true;
+                        break;
+                    }
+                }
+            }
+
             // 1. Escanear Drops (Radio pequeño 2.5u)
-            if (window.lootSystem) {
+            if (!promptShown && window.lootSystem) {
                 for (const drop of window.lootSystem._worldDrops) {
-                    if (this.mesh.position.distanceTo(drop.mesh.position) < 2.5) {
+                    if (this.mesh.position.distanceToSquared(drop.mesh.position) < 6.25) {
                         window.uiManager.showInteractionPrompt(`Recoger ${drop.itemType.replace('_', ' ')}`);
                         promptShown = true;
                         break;
@@ -443,7 +527,8 @@ export class PlayerController {
                         const nx = n.position?.x || n.position[0];
                         const ny = n.position?.y || n.position[1];
                         const nz = n.position?.z || n.position[2];
-                        if (this.mesh.position.distanceTo(new THREE.Vector3(nx, ny, nz)) < 4.0) {
+                        _rayOriginDown.set(nx, ny, nz);
+                        if (this.mesh.position.distanceToSquared(_rayOriginDown) < 16.0) {
                             window.uiManager.showInteractionPrompt(n.type === 'merchant' ? 'Comprar' : 'Hablar');
                             promptShown = true;
                             break;
@@ -453,7 +538,8 @@ export class PlayerController {
                 // 3. Puertas
                 if (!promptShown && ast.doors) {
                     for (const d of ast.doors) {
-                        if (this.mesh.position.distanceTo(new THREE.Vector3(d.position.x, d.position.y, d.position.z)) < 4.0) {
+                        _rayOriginDown.set(d.position.x, d.position.y, d.position.z);
+                        if (this.mesh.position.distanceToSquared(_rayOriginDown) < 16.0) {
                             window.uiManager.showInteractionPrompt('Abrir');
                             promptShown = true;
                             break;
@@ -464,8 +550,19 @@ export class PlayerController {
             // 4. Objetos agarrables (Vasijas, Rocas)
             if (!promptShown && typeof grabbables !== 'undefined' && this.grabbedObject === null) {
                 for (const g of grabbables) {
-                    if (this.mesh.position.distanceTo(g.position) < 3.0) {
+                    if (this.mesh.position.distanceToSquared(g.position) < 9.0) {
                         window.uiManager.showInteractionPrompt('Levantar');
+                        promptShown = true;
+                        break;
+                    }
+                }
+            }
+            
+            // 5. Máquinas de Guardado (Payphones)
+            if (!promptShown && typeof payphones !== 'undefined') {
+                for (const p of payphones) {
+                    if (this.mesh.position.distanceToSquared(p.mesh.position) < 9.0) {
+                        window.uiManager.showInteractionPrompt('Guardar');
                         promptShown = true;
                         break;
                     }
@@ -1217,8 +1314,8 @@ export class PlayerController {
                         if (this.enemyManagerRef) {
                             for (const e of this.enemyManagerRef.enemies) {
                                 if (e.userData.state !== 'DEAD') {
-                                    const d = e.position.distanceTo(this.mesh.position);
-                                    if (d < 5.0) {
+                                    const dSq = e.position.distanceToSquared(this.mesh.position);
+                                    if (dSq < 25.0) {
                                         this.enemyManagerRef.hitEnemy(e, this.mesh.position, false);
                                     }
                                 }
@@ -1440,58 +1537,67 @@ export class PlayerController {
         
         // --- Escaneo Volumétrico de Portales Dimensionales (Nivel) ---
         if (!window.levelManager || !window.levelManager.isTransitioning) {
-            const playerBox = new THREE.Box3().setFromCenterAndSize(
-                new THREE.Vector3(this.mesh.position.x, this.mesh.position.y + 1, this.mesh.position.z),
-                new THREE.Vector3(1.5, 2.5, 1.5) // Hitbox un poco grande para facilitar entrada
-            );
-            
-            // PORTALES DINÁMICOS (NEXT-GEN)
-            if (this.weaponManager && this.weaponManager.activePortals) {
-                const portalsLinked = this.weaponManager.activePortals;
-                if (portalsLinked[0] && portalsLinked[1]) {
-                    // Check intersection con alguno de los dos
-                    for (let i = 0; i < 2; i++) {
-                        const pSource = portalsLinked[i];
-                        const destType = i === 0 ? 1 : 0;
-                        const pDest = portalsLinked[destType];
-                        
-                        const pBox = new THREE.Box3().setFromObject(pSource);
-                        if (playerBox.intersectsBox(pBox)) {
-                            // PREVENCIÓN DE LOOP INFINITO: Añadir Enfriamiento o saltar adelante
-                            // Trasladar jugador a la salida
-                            const exitNorm = pDest.userData.normal;
+            // Inicializar Cooldown Timer si no existe
+            if (this._portalCooldown === undefined) this._portalCooldown = 0;
+            if (this._portalCooldown > 0) this._portalCooldown -= delta;
+
+            if (this._portalCooldown <= 0) {
+                const playerBox = new THREE.Box3().setFromCenterAndSize(
+                    new THREE.Vector3(this.mesh.position.x, this.mesh.position.y + 1, this.mesh.position.z),
+                    new THREE.Vector3(1.5, 2.5, 1.5) // Hitbox un poco grande para facilitar entrada
+                );
+                
+                // PORTALES DINÁMICOS (NEXT-GEN)
+                if (this.weaponManager && this.weaponManager.activePortals) {
+                    const portalsLinked = this.weaponManager.activePortals;
+                    if (portalsLinked[0] && portalsLinked[1]) {
+                        // Check intersection con alguno de los dos
+                        for (let i = 0; i < 2; i++) {
+                            const pSource = portalsLinked[i];
+                            const destType = i === 0 ? 1 : 0;
+                            const pDest = portalsLinked[destType];
                             
-                            // 1. Posición base (Sacarlo volando de la pared, un metro afuera para no colisionar con la caja de nuevo)
-                            this.mesh.position.copy(pDest.position).addScaledVector(exitNorm, 2.5);
-                            this.mesh.position.y -= 1.0; // Ajustar pies a la altura del anillo
-                            
-                            // 2. Preservación y Transformación del Vector Cinemático (MOMENTUM)
-                            const totalSpeed = Math.hypot(this.currentVelocity.x, this.currentVelocity.z, this.velocity.y);
-                            const exitMag = Math.max(totalSpeed, 15.0); // Mínimo impulso de salida para no caer al vacío instantaneamente
-                            
-                            this.currentVelocity.x = exitNorm.x * exitMag;
-                            this.currentVelocity.z = exitNorm.z * exitMag;
-                            
-                            // Si la pared proyecta hacia arriba (piso), inyectar energía a la gravedad en 'y'
-                            if (exitNorm.y > 0.5) {
-                                  this.velocity.y = exitMag * exitNorm.y;
-                            } else {
-                                  this.velocity.y = Math.max(5.0, exitMag * exitNorm.y); // Fling al menos un poco si es muro lateral
+                            const pBox = new THREE.Box3().setFromObject(pSource);
+                            if (playerBox.intersectsBox(pBox)) {
+                                // PREVENCIÓN DE LOOP INFINITO: Añadir Enfriamiento Físico
+                                this._portalCooldown = 1.0; // 1 segundo de cooldown
+                                
+                                // Trasladar jugador a la salida
+                                const exitNorm = pDest.userData.normal;
+                                
+                                // 1. Posición base (Sacarlo volando de la pared, un metro afuera)
+                                this.mesh.position.copy(pDest.position).addScaledVector(exitNorm, 2.5);
+                                this.mesh.position.y -= 1.0; // Ajustar pies a la altura del anillo
+                                
+                                // 2. Preservación y Transformación del Vector Cinemático (MOMENTUM)
+                                const totalSpeed = Math.hypot(this.currentVelocity.x, this.currentVelocity.z, this.velocity.y);
+                                const exitMag = Math.max(totalSpeed, 15.0); // Mínimo impulso de salida
+                                
+                                this.currentVelocity.x = exitNorm.x * exitMag;
+                                this.currentVelocity.z = exitNorm.z * exitMag;
+                                
+                                // Si la pared proyecta hacia arriba (piso), inyectar energía a la gravedad en 'y'
+                                if (exitNorm.y > 0.5) {
+                                      this.velocity.y = exitMag * exitNorm.y;
+                                } else {
+                                      this.velocity.y = Math.max(5.0, exitMag * exitNorm.y);
+                                }
+                                
+                                this.onGround = false;
+                                window.dispatchEvent(new CustomEvent('cameraShake', { detail: { duration: 0.3, intensity: 2.0 } }));
+                                playLandSound();
+                                
+                                // Destrucción Condicional: Si el nivel dicta portales de un solo uso
+                                const ast = window.levelManager.currentAST;
+                                if (ast && ast.metadata && ast.metadata.portalMode === 'single_use') {
+                                    this.weaponManager.scene.remove(pSource);
+                                    this.weaponManager.scene.remove(pDest);
+                                    portalsLinked[0] = null;
+                                    portalsLinked[1] = null;
+                                }
+                                
+                                break;
                             }
-                            
-                            this.onGround = false;
-                            window.dispatchEvent(new CustomEvent('cameraShake', { detail: { duration: 0.3, intensity: 2.0 } }));
-                            playLandSound();
-                            
-                            // Destruir portales tras 1 uso (Opcional, pero previene Loops infinitos de clipping si lo tiras al piso horizontal)
-                            setTimeout(() => {
-                                this.weaponManager.scene.remove(pSource);
-                                this.weaponManager.scene.remove(pDest);
-                                portalsLinked[0] = null;
-                                portalsLinked[1] = null;
-                            }, 50);
-                            
-                            break;
                         }
                     }
                 }
@@ -1515,6 +1621,7 @@ export class PlayerController {
         if (!this.mesh) return;
         this.mesh.userData._currentVelocity = this.currentVelocity;
         this.mesh.userData._onGround        = this.onGround;
+        this.mesh.userData._inWater         = this.inWater;
     }
 
     // === RE4 TORSO PITCH IK ===
@@ -1757,6 +1864,15 @@ export class PlayerController {
                 // CRASH!
                 this.sceneRef.remove(obj);
                 
+                // === BOSS FIGHT DAMAGE BRIDGE ===
+                // Avisar al BossManager/EnemyManager sobre el impacto AoE
+                window.dispatchEvent(new CustomEvent('heavyProjectileHit', { 
+                    detail: { 
+                        position: obj.position.clone(), 
+                        isMassive: obj.userData.isMassive === true 
+                    } 
+                }));
+
                 if(this.vfxManager) {
                     this.vfxManager.createDustPuff(obj.position, 30);
                 }

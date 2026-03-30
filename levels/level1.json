@@ -103,6 +103,8 @@
         {"id":"vasija_inicio_2", "type":"pot", "position":{"x":0, "y":0, "z":105}},
         {"id":"vasija_inicio_3", "type":"pot", "position":{"x":8, "y":0, "z":105}},
 
+        {"id":"mercader_pochteca", "type":"goomba", "spriteType":"mercader", "position":{"x":5, "y":1, "z":115}},
+
         {"id":"alebrije_limo_spawn",           "type":"goomba", "spriteType":"aldeano_azteca", "position":{"x":15, "y":1, "z":100}},
         {"id":"alebrije_limo_lodo",             "type":"goomba", "spriteType":"serpiente",      "position":{"x":-65, "y":0, "z":0}},
         {"id":"guerrero_jaguar_plaza",          "type":"goomba", "spriteType":"jaguar",          "position":{"x":20, "y":0, "z":-40}},
