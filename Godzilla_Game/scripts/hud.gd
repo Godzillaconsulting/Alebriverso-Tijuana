@@ -5,12 +5,14 @@ var vida = 3
 var gemas = 0
 var switches = 0
 
-var lbl_cacao: Label
-var hbox_vida: HBoxContainer
-var lbl_gemas: Label
-var lbl_switches: Label
+var hp_bar: ProgressBar
+var lbl_items: Label
+var lbl_pesos: Label
 var notif_label: Label
 var notif_timer = 0.0
+
+var map_rect: TextureRect
+var crosshair_rect: ColorRect
 
 var tex_cacao: Texture2D
 var tex_heart: Texture2D
@@ -34,130 +36,144 @@ func _ready():
 
 	var root = Control.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	root.mouse_filter = Control.MOUSE_FILTER_IGNORE # CRÍTICO: No bloquear el mouse de la cámara
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
 	
-	# ESTILO PS2: HUD FLOTANTE, LIMPIO Y MINIMALISTA (Sin caja de fondo gigante)
+	# CONTENEDOR INFERIOR DERECHO (Clon de Referencia)
 	var margin = MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 35)
-	margin.add_theme_constant_override("margin_top", 35)
-	margin.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	margin.add_theme_constant_override("margin_right", 40)
+	margin.add_theme_constant_override("margin_bottom", 40)
+	margin.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	root.add_child(margin)
 	
 	var vbox = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 6) # Elementos más agrupados
+	vbox.alignment = BoxContainer.ALIGNMENT_END
 	margin.add_child(vbox)
 	
-	# Cacao Row (Tonos oro antiguo)
-	lbl_cacao = _make_row(vbox, tex_cacao, " x 0", Color(0.9, 0.75, 0.3))
+	# Barra de Vida Minimalista (Verde Ultra Delgada)
+	hp_bar = ProgressBar.new()
+	hp_bar.max_value = 3
+	hp_bar.value = 3
+	hp_bar.custom_minimum_size = Vector2(180, 4) # Súper delgada
+	hp_bar.show_percentage = false
 	
-	# Vida Row
-	hbox_vida = HBoxContainer.new()
-	hbox_vida.add_theme_constant_override("separation", 8)
-	_actualizar_corazones_ui()
-	vbox.add_child(hbox_vida)
+	var bg_style = StyleBoxFlat.new()
+	bg_style.bg_color = Color(0.0, 0.0, 0.0, 0.8)
+	hp_bar.add_theme_stylebox_override("background", bg_style)
 	
-	# Pesos Row (Oro/Plata para el camión)
-	lbl_gemas = _make_row(vbox, tex_gem, " 0 / 6", Color(0.85, 0.75, 0.2))
+	var fill_style = StyleBoxFlat.new()
+	fill_style.bg_color = Color(0.4, 0.9, 0.4) # Verde claro/pálido realista
+	hp_bar.add_theme_stylebox_override("fill", fill_style)
+	vbox.add_child(hp_bar)
 	
-	# Altares Row (Sangre vieja)
-	lbl_switches = _make_row(vbox, tex_altar, " 0 / 3", Color(0.8, 0.3, 0.3))
+	# Separador
+	var sep = Control.new()
+	sep.custom_minimum_size = Vector2(0, 15)
+	vbox.add_child(sep)
 	
-	# Notificación Flotante Estilizada
+	# Íconos Apilados Verticalmente (Alineados a la derecha)
+	var vbox_icons = VBoxContainer.new()
+	vbox_icons.alignment = BoxContainer.ALIGNMENT_END
+	vbox.add_child(vbox_icons)
+	
+	# Fila Cacao
+	var row_cacao = HBoxContainer.new()
+	row_cacao.alignment = BoxContainer.ALIGNMENT_END
+	vbox_icons.add_child(row_cacao)
+	
+	var tex_cacao_rect = TextureRect.new()
+	tex_cacao_rect.texture = tex_cacao
+	tex_cacao_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tex_cacao_rect.custom_minimum_size = Vector2(32, 32)
+	tex_cacao_rect.modulate = Color(1.5, 1.5, 1.5) # Hacerlo blanco brillante/sobreexpuesto
+	row_cacao.add_child(tex_cacao_rect)
+	
+	lbl_items = Label.new()
+	lbl_items.text = "0"
+	lbl_items.add_theme_font_size_override("font_size", 28)
+	lbl_items.add_theme_color_override("font_shadow_color", Color(0,0,0,1))
+	row_cacao.add_child(lbl_items)
+	
+	# Fila Gemas
+	var row_gemas = HBoxContainer.new()
+	row_gemas.alignment = BoxContainer.ALIGNMENT_END
+	vbox_icons.add_child(row_gemas)
+	
+	var tex_peso_rect = TextureRect.new()
+	tex_peso_rect.texture = tex_gem
+	tex_peso_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tex_peso_rect.custom_minimum_size = Vector2(32, 32)
+	tex_peso_rect.modulate = Color(1.5, 1.5, 1.5)
+	row_gemas.add_child(tex_peso_rect)
+	
+	lbl_pesos = Label.new()
+	lbl_pesos.name = "LblPesos"
+	lbl_pesos.text = "0/6"
+	lbl_pesos.add_theme_font_size_override("font_size", 28)
+	lbl_pesos.add_theme_color_override("font_shadow_color", Color(0,0,0,1))
+	row_gemas.add_child(lbl_pesos)
+	
+	# Notificación Flotante
 	notif_label = Label.new()
 	notif_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	notif_label.position = Vector2(0, 150)
-	notif_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	notif_label.add_theme_font_size_override("font_size", 38)
-	notif_label.add_theme_color_override("font_color", Color(0.9, 0.8, 0.5))
+	notif_label.position = Vector2(0, -120)
+	notif_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	notif_label.add_theme_font_size_override("font_size", 22)
+	notif_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
 	notif_label.add_theme_color_override("font_shadow_color", Color(0,0,0,1))
-	notif_label.add_theme_constant_override("shadow_offset_x", 4)
-	notif_label.add_theme_constant_override("shadow_offset_y", 4)
-	notif_label.add_theme_constant_override("shadow_outline_size", 4)
 	notif_label.visible = false
 	root.add_child(notif_label)
-
-func _make_row(parent: Node, tex: Texture2D, texto: String, color: Color) -> Label:
-	var row = HBoxContainer.new()
-	row.alignment = BoxContainer.ALIGNMENT_BEGIN
 	
-	var icon = TextureRect.new()
-	if tex:
-		icon.texture = tex
-	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon.custom_minimum_size = Vector2(28, 28) # Iconos clásicos más pequeños (PS2 style)
-	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	var mat = CanvasItemMaterial.new()
-	mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-	icon.material = mat
-	row.add_child(icon)
-	
-	var lbl = Label.new()
-	lbl.text = texto
-	lbl.add_theme_font_size_override("font_size", 24) # Tipografía sutil
-	lbl.add_theme_color_override("font_color", color)
-	lbl.add_theme_color_override("font_shadow_color", Color(0,0,0,1))
-	lbl.add_theme_constant_override("shadow_offset_x", 2)
-	lbl.add_theme_constant_override("shadow_offset_y", 2)
-	lbl.add_theme_constant_override("shadow_outline_size", 3)
-	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	row.add_child(lbl)
-	
-	parent.add_child(row)
-	return lbl
-
-func _actualizar_corazones_ui():
-	if not hbox_vida: return
-	for c in hbox_vida.get_children():
-		c.queue_free()
-	
-	for i in range(3):
-		var icon = TextureRect.new()
-		if tex_heart:
-			icon.texture = tex_heart
-		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icon.custom_minimum_size = Vector2(26, 26) # Corazones pequeños
-		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		
-		var mat = CanvasItemMaterial.new()
-		mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-		icon.material = mat
-		
-		# Si está vacío (perdió vida)
-		if i >= vida:
-			icon.modulate = Color(0.3, 0.3, 0.3, 0.4)
-			icon.material = null 
-			
-		hbox_vida.add_child(icon)
+	# Mira / Crosshair (Centro de pantalla)
+	crosshair_rect = ColorRect.new()
+	crosshair_rect.custom_minimum_size = Vector2(4, 4)
+	crosshair_rect.color = Color(1, 0, 0, 0.8) # Mira roja
+	crosshair_rect.set_anchors_preset(Control.PRESET_CENTER)
+	crosshair_rect.visible = false
+	root.add_child(crosshair_rect)
 
 func actualizar_cacao(v: int):
 	cacao = v
-	if lbl_cacao: lbl_cacao.text = " x %d" % cacao
+	_actualizar_texto()
 
 func actualizar_vida(v: int):
 	vida = v
-	_actualizar_corazones_ui()
+	hp_bar.value = vida
+	# Cambiar color según vida (estilo RE4: verde, amarillo, rojo)
+	var fill_style = hp_bar.get_theme_stylebox("fill") as StyleBoxFlat
+	if vida >= 3:
+		fill_style.bg_color = Color(0.3, 0.8, 0.3) # Verde
+	elif vida == 2:
+		fill_style.bg_color = Color(0.8, 0.8, 0.2) # Amarillo
+	else:
+		fill_style.bg_color = Color(0.9, 0.2, 0.2) # Rojo Peligro
 
 func actualizar_gema():
 	gemas += 1
-	if lbl_gemas: lbl_gemas.text = " %d / 6" % gemas
+	_actualizar_texto()
 	if gemas == 6:
-		mostrar_notificacion("¡Tienes para el camión! (+6 Pesos)")
+		mostrar_notificacion("Pesos listos. Encuentra el camión.")
 	else:
-		mostrar_notificacion("✨ ¡Gema del Mictlán recogida! (%d/6)" % gemas)
+		mostrar_notificacion("Peso recolectado (%d/6)" % gemas)
 
 func actualizar_switch():
 	switches += 1
-	if lbl_switches: lbl_switches.text = " %d / 3" % switches
-	mostrar_notificacion("🔮 ¡Altar activado! (%d/3)" % switches)
 	if switches >= 3:
-		mostrar_notificacion("🌀 ¡EL GRAN MURO DE ENERGÍA SE HA ROTO!")
+		mostrar_notificacion("Muro de energía desbloqueado.")
+	else:
+		mostrar_notificacion("Altar activado (%d/3)" % switches)
+
+func _actualizar_texto():
+	if lbl_items:
+		lbl_items.text = "Balas: %d  | " % cacao
+	if lbl_pesos:
+		lbl_pesos.text = "%d/6" % gemas
 
 func mostrar_notificacion(texto: String):
 	if notif_label:
 		notif_label.text = texto
 		notif_label.visible = true
-		notif_timer = 4.0
+		notif_timer = 3.0
 
 func _process(delta):
 	if notif_timer > 0 and notif_label:
@@ -165,3 +181,11 @@ func _process(delta):
 		notif_label.modulate.a = min(1.0, notif_timer)
 		if notif_timer <= 0:
 			notif_label.visible = false
+
+func set_minimap_texture(tex: Texture2D):
+	if map_rect:
+		map_rect.texture = tex
+
+func set_crosshair(is_visible: bool):
+	if crosshair_rect:
+		crosshair_rect.visible = is_visible

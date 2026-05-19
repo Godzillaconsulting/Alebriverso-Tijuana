@@ -1,0 +1,58 @@
+Godot Engine v4.3.stable.official.77dcf97d8 - https://godotengine.org
+
+SCRIPT ERROR: Parse Error: Function "crear_plataforma()" not found in base self.
+          at: GDScript::reload (res://scripts/main.gd:218)
+SCRIPT ERROR: Parse Error: Function "crear_plataforma()" not found in base self.
+          at: GDScript::reload (res://scripts/main.gd:222)
+SCRIPT ERROR: Parse Error: Function "crear_interruptor()" not found in base self.
+          at: GDScript::reload (res://scripts/main.gd:358)
+SCRIPT ERROR: Parse Error: Function "crear_peso_camion()" not found in base self.
+          at: GDScript::reload (res://scripts/main.gd:360)
+SCRIPT ERROR: Parse Error: Function "crear_plataforma()" not found in base self.
+          at: GDScript::reload (res://scripts/main.gd:364)
+SCRIPT ERROR: Parse Error: Function "crear_plataforma()" not found in base self.
+          at: GDScript::reload (res://scripts/main.gd:366)
+SCRIPT ERROR: Parse Error: Function "crear_plataforma()" not found in base self.
+          at: GDScript::reload (res://scripts/main.gd:367)
+SCRIPT ERROR: Parse Error: Function "crear_plataforma()" not found in base self.
+          at: GDScript::reload (res://scripts/main.gd:368)
+SCRIPT ERROR: Parse Error: Function "crear_plataforma()" not found in base self.
+          at: GDScript::reload (res://scripts/main.gd:369)
+SCRIPT ERROR: Parse Error: Function "crear_flor()" not found in base self.
+          at: GDScript::reload (res://scripts/main.gd:374)
+SCRIPT ERROR: Parse Error: Function "crear_plataforma()" not found in base self.
+          at: GDScript::reload (res://scripts/main.gd:376)
+SCRIPT ERROR: Parse Error: Function "crear_interruptor()" not found in base self.
+          at: GDScript::reload (res://scripts/main.gd:378)
+SCRIPT ERROR: Parse Error: Function "crear_peso_camion()" not found in base self.
+          at: GDScript::reload (res://scripts/main.gd:382)
+SCRIPT ERROR: Parse Error: Function "crear_peso_camion()" not found in base self.
+          at: GDScript::reload (res://scripts/main.gd:384)
+SCRIPT ERROR: Parse Error: Function "crear_plataforma()" not found in base self.
+          at: GDScript::reload (res://scripts/main.gd:388)
+SCRIPT ERROR: Parse Error: Function "crear_plataforma()" not found in base self.
+          at: GDScript::reload (res://scripts/main.gd:394)
+SCRIPT ERROR: Parse Error: Function "crear_plataforma()" not found in base self.
+          at: GDScript::reload (res://scripts/main.gd:398)
+SCRIPT ERROR: Parse Error: Function "crear_plataforma()" not found in base self.
+          at: GDScript::reload (res://scripts/main.gd:410)
+SCRIPT ERROR: Parse Error: Function "crear_pilar()" not found in base self.
+          at: GDScript::reload (res://scripts/main.gd:411)
+SCRIPT ERROR: Parse Error: Function "crear_pilar()" not found in base self.
+          at: GDScript::reload (res://scripts/main.gd:411)
+SCRIPT ERROR: Parse Error: Function "crear_interruptor()" not found in base self.
+          at: GDScript::reload (res://scripts/main.gd:413)
+SCRIPT ERROR: Parse Error: Function "crear_peso_camion()" not found in base self.
+          at: GDScript::reload (res://scripts/main.gd:416)
+SCRIPT ERROR: Parse Error: Function "crear_plataforma()" not found in base self.
+          at: GDScript::reload (res://scripts/main.gd:423)
+SCRIPT ERROR: Parse Error: Function "crear_plataforma()" not found in base self.
+          at: GDScript::reload (res://scripts/main.gd:425)
+SCRIPT ERROR: Parse Error: Function "crear_plataforma()" not found in base self.
+          at: GDScript::reload (res://scripts/main.gd:427)
+SCRIPT ERROR: Parse Error: Function "crear_pilar()" not found in base self.
+          at: GDScript::reload (res://scripts/main.gd:435)
+SCRIPT ERROR: Parse Error: Function "crear_peso_camion()" not found in base self.
+          at: GDScript::reload (res://scripts/main.gd:440)
+ERROR: Failed to load script "res://scripts/main.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript.cpp:2936)

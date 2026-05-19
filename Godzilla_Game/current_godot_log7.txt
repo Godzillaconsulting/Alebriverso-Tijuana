@@ -1,0 +1,13 @@
+Godot Engine v4.3.stable.official.77dcf97d8 - https://godotengine.org
+
+ERROR: Method/function failed. Returning: ERR_FILE_CORRUPT
+   at: webp_load_image_from_buffer (modules/webp/webp_common.cpp:161)
+ERROR: Error loading image: C:/Users/GODZILLA.IA/Tijuana/Godzilla_Game/textures/limestone_mossy.webp
+   at: load_image (core/io/image_loader.cpp:101)
+ERROR: Failed to load image. Error 16
+   at: (core/io/image.cpp:2493)
+Inicializando Nivel 1: El Umbral del Mictlán...
+ERROR: No loader found for resource: res://assets/models/canon_modulo.glb (expected type: )
+   at: (core/io/resource_loader.cpp:291)
+ERROR: No loader found for resource: res://assets/models/cueva_tunel.glb (expected type: )
+   at: (core/io/resource_loader.cpp:291)

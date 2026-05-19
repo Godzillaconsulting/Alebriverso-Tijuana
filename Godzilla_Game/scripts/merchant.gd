@@ -25,17 +25,38 @@ func _ready():
 	col.position.y = 0.5
 	add_child(col)
 	
-	# Calavera Vendedora (Simple representación por ahora)
-	var calavera = MeshInstance3D.new()
-	var skull = SphereMesh.new()
-	skull.radius = 0.5; skull.height = 1.0
-	calavera.mesh = skull
-	calavera.position = Vector3(0, 1.5, -0.5)
-	add_child(calavera)
+	# Vendedor Rigged
+	var vendedor = cargar_glb_runtime("res://models/merchant_anim.glb")
+	if not vendedor: vendedor = Node3D.new()
+	vendedor.position = Vector3(0, 1.0, -1.0)
+	vendedor.scale = Vector3(0.5, 0.5, 0.5) # Escala ajustada
+	
+	var mat_sombra = StandardMaterial3D.new()
+	mat_sombra.albedo_color = Color(0.02, 0.0, 0.05, 0.8) # Negro/Morado oscuro
+	mat_sombra.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat_sombra.roughness = 1.0
+	mat_sombra.emission_enabled = true
+	mat_sombra.emission = Color(0.3, 0.0, 0.5)
+	mat_sombra.emission_energy_multiplier = 0.2
+	mat_sombra.rim_enabled = true
+	mat_sombra.rim = 0.5
+	mat_sombra.rim_tint = 1.0
+	
+	# Usar una mini-función local para aplicar el shader
+	var queue = [vendedor]
+	while queue.size() > 0:
+		var curr = queue.pop_front()
+		if curr is MeshInstance3D:
+			curr.material_override = mat_sombra
+		queue.append_array(curr.get_children())
+	
+	# Usamos un helper para buscar AnimationPlayer y animarlo
+	animar_modelo(vendedor)
+	add_child(vendedor)
 	
 	# Texto flotante (El grito del tianguis)
 	label = Label3D.new()
-	label.text = "¡Llévele llévele!\n[E] Agua de Jamaica (+1 Vida) - 5 Cacaos\n[F] Bolillo pal susto (Full Vida) - 15 Cacaos"
+	label.text = "¡Pásale! Mutaciones de Alebrije:\n[E / RB] Fuego (15 Cacao)\n[F / LB] Alas (25 Cacao)"
 	label.font_size = 50
 	label.outline_size = 16
 	label.modulate = Color(1, 0.9, 0) # Oro
@@ -58,55 +79,78 @@ func _process(delta):
 	# Checar distancia
 	var dist = global_position.distance_to(player.global_position)
 	if dist < interaction_radius:
+		if label.modulate.a < 0.5:
+			# Greeting
+			var real_hud = get_tree().get_root().find_child("HUD", true, false)
+			if real_hud and real_hud.has_method("mostrar_notificacion"):
+				real_hud.mostrar_notificacion("Tianguista: ¡Pásale, güero! Tengo de todo para que no te me vayas en seco.")
 		label.modulate.a = 1.0
 		# Lógica de compra
-		if Input.is_key_pressed(KEY_E):
-			comprar_jamaica()
-		elif Input.is_key_pressed(KEY_F):
-			comprar_bolillo()
+		if Input.is_action_just_pressed("interact") or Input.is_key_pressed(KEY_E):
+			comprar_fuego()
+		elif Input.is_key_pressed(KEY_F) or Input.is_joy_button_pressed(0, JOY_BUTTON_LEFT_SHOULDER):
+			comprar_alas()
 	else:
+		if label.modulate.a > 0.5:
+			# Farewell
+			var real_hud = get_tree().get_root().find_child("HUD", true, false)
+			if real_hud and real_hud.has_method("mostrar_notificacion"):
+				real_hud.mostrar_notificacion("Tianguista: Ahí me avisas cómo te quedó... el inventario. ¡Regresa pronto!")
 		label.modulate.a = 0.3 # Lejos, casi transparente
 		
-func comprar_jamaica():
-	if cooldown > 0: return
-	cooldown = 1.0 # Evitar spam
-	
-	if player.cacao_score >= 5:
-		var real_hud = get_tree().get_root().find_child("HUD", true, false)
-		if real_hud and real_hud.has_method("actualizar_vida"):
-			if real_hud.vida < 3:
-				player.cacao_score -= 5
-				real_hud.actualizar_cacao(player.cacao_score)
-				real_hud.actualizar_vida(real_hud.vida + 1)
-				real_hud.mostrar_notificacion("¡Agua de Jamaica refrescante! (+1 Vida)")
-			else:
-				real_hud.mostrar_notificacion("¡Ya estás lleno, jefe!")
-	else:
-		var real_hud = get_tree().get_root().find_child("HUD", true, false)
-		if real_hud and real_hud.has_method("mostrar_notificacion"):
-			real_hud.mostrar_notificacion("¡Te faltan cacaos, no fío!")
-
-func comprar_bolillo():
+func comprar_fuego():
 	if cooldown > 0: return
 	cooldown = 1.0
 	
 	if player.cacao_score >= 15:
 		var real_hud = get_tree().get_root().find_child("HUD", true, false)
-		if real_hud and real_hud.has_method("actualizar_vida"):
-			if real_hud.vida < 3:
-				player.cacao_score -= 15
+		if not player.unlocked_fire:
+			player.cacao_score -= 15
+			player.unlocked_fire = true
+			if real_hud:
 				real_hud.actualizar_cacao(player.cacao_score)
-				real_hud.actualizar_vida(3) # FULL VIDA
-				real_hud.mostrar_notificacion("¡Bolillo pal susto! (Full Vida - Estás pesado)")
-				
-				# Efecto secundario: Te vuelves lento por 2 segundos
-				player.SPEED = 2.0
-				get_tree().create_timer(2.0).timeout.connect(func(): player.SPEED = 8.0)
-				
-			else:
-				real_hud.mostrar_notificacion("¡Ya estás lleno, jefe!")
+				real_hud.mostrar_notificacion("¡Aliento de Fuego desbloqueado! (Usa Y o R)")
+		else:
+			if real_hud: real_hud.mostrar_notificacion("Ya tienes pulmones de dragón, jefe.")
+	else:
+		var real_hud = get_tree().get_root().find_child("HUD", true, false)
+		if real_hud: real_hud.mostrar_notificacion("¡Te falta Cacao para esta mutación!")
+
+func comprar_alas():
+	if cooldown > 0: return
+	cooldown = 1.0
+	
+	if player.cacao_score >= 25:
+		var real_hud = get_tree().get_root().find_child("HUD", true, false)
+		if not player.unlocked_wings:
+			player.cacao_score -= 25
+			player.unlocked_wings = true
+			if real_hud:
+				real_hud.actualizar_cacao(player.cacao_score)
+				real_hud.mostrar_notificacion("¡Alas de Obsidiana! (Doble Salto: A x2 o Espacio x2)")
+		else:
+			if real_hud: real_hud.mostrar_notificacion("Ya puedes volar, carnal.")
 	else:
 		var real_hud = get_tree().get_root().find_child("HUD", true, false)
 		if real_hud and real_hud.has_method("mostrar_notificacion"):
-			real_hud.mostrar_notificacion("¡Trabájale! Cuesta 15 cacaos.")
+			real_hud.mostrar_notificacion("¡No joven, de a grapa no hay nada! Enséñame la lana.")
 
+func cargar_glb_runtime(path: String) -> Node3D:
+	var gltf = GLTFDocument.new()
+	var state = GLTFState.new()
+	var real_path = ProjectSettings.globalize_path(path)
+	if FileAccess.file_exists(real_path):
+		var err = gltf.append_from_file(real_path, state)
+		if err == OK: return gltf.generate_scene(state)
+	return null
+
+func animar_modelo(node: Node):
+	if node is AnimationPlayer:
+		var anim_list = node.get_animation_list()
+		if anim_list.size() > 0:
+			var anim = node.get_animation(anim_list[0])
+			if anim:
+				anim.loop_mode = Animation.LOOP_LINEAR
+			node.play(anim_list[0])
+	for child in node.get_children():
+		animar_modelo(child)

@@ -9,9 +9,11 @@ enum NodeState {
 	PATRULLANDO, # Nodo: Caminar en círculos
 	PERSIGUIENDO, # Nodo: Ir hacia el jugador
 	ATACANDO,     # Nodo: Embestir
-	CONFUNDIDO    # Nodo: Comportamiento gracioso (Cultura Mexicana)
+	CONFUNDIDO,   # Nodo: Comportamiento gracioso (Cultura Mexicana)
+	ATURDIDO       # Nodo: Aturdido
 }
 
+@export var is_boss: bool = false
 var current_node = NodeState.PATRULLANDO
 var target_player: Node3D = null
 
@@ -31,39 +33,43 @@ func _ready():
 	patrol_center = global_position
 	generar_random_target()
 	
-	# Geometría Procedural: GUERRERO JAGUAR
-	var pivot = Node3D.new()
-	var mat_piel = StandardMaterial3D.new()
-	mat_piel.albedo_color = Color(0.6, 0.4, 0.2) # Cobre / Morena
-	
-	# Torso
-	var torso = MeshInstance3D.new()
-	var torso_mesh = CapsuleMesh.new(); torso_mesh.radius = 0.45; torso_mesh.height = 1.3
-	torso.mesh = torso_mesh; torso.material_override = mat_piel
-	torso.position.y = 1.0
-	pivot.add_child(torso)
-	
-	# Cabeza de Jaguar (Yelmo)
-	var cabeza = MeshInstance3D.new()
-	var cabeza_mesh = SphereMesh.new(); cabeza_mesh.radius = 0.35; cabeza_mesh.height = 0.7
-	var mat_jaguar = StandardMaterial3D.new()
-	mat_jaguar.albedo_color = Color(0.9, 0.7, 0.1) # Amarillo Jaguar
-	cabeza.mesh = cabeza_mesh; cabeza.material_override = mat_jaguar
-	cabeza.position.y = 0.8
-	cabeza.position.z = -0.1
-	torso.add_child(cabeza)
-	
-	# Arma (Macuahuitl)
-	var arma = MeshInstance3D.new()
-	var arma_mesh = BoxMesh.new(); arma_mesh.size = Vector3(0.1, 1.2, 0.3)
-	var mat_obsidiana = StandardMaterial3D.new(); mat_obsidiana.albedo_color = Color(0.1, 0.1, 0.1)
-	arma.mesh = arma_mesh; arma.material_override = mat_obsidiana
-	arma.position = Vector3(0.6, 0.2, -0.4)
-	arma.rotation_degrees.x = -45
-	torso.add_child(arma)
-	
+	var pivot = cargar_glb_runtime("res://models/jaguar_anim.glb")
+	if not pivot: pivot = Node3D.new()
+	pivot.scale = Vector3(0.5, 0.5, 0.5) # Escala ajustada
 	add_child(pivot)
 	
+	# Guardar referencia al AnimationPlayer para cambiar estados
+	animation_player = buscar_animation_player(pivot)
+	if animation_player:
+		var anims = animation_player.get_animation_list()
+		if anims.size() > 0:
+			animation_player.play(anims[0])
+	
+	if is_boss:
+		scale = Vector3(1.5, 1.5, 1.5) # Jefe escalado proporcionalmente
+		hp = 20
+		SPEED = 6.0
+		# Cambiar color a obsidiana negra usando el helper recursivo
+		var mat_obsidiana = StandardMaterial3D.new()
+		mat_obsidiana.albedo_color = Color(0.05, 0.05, 0.05) # Negro puro
+		mat_obsidiana.metallic = 1.0
+		mat_obsidiana.roughness = 0.2
+		mat_obsidiana.emission_enabled = true
+		mat_obsidiana.emission = Color(0.8, 0.1, 0.0) # Ojos/Grietas rojas
+		mat_obsidiana.emission_energy_multiplier = 0.5
+		aplicar_color_recursivo(pivot, mat_obsidiana)
+	else:
+		# Jaguar normal también es de piedra mágica pero grisácea
+		var mat_piedra = StandardMaterial3D.new()
+		mat_piedra.albedo_color = Color(0.3, 0.3, 0.3)
+		mat_piedra.metallic = 0.5
+		mat_piedra.roughness = 0.7
+		aplicar_color_recursivo(pivot, mat_piedra)
+		# Grito inicial
+		var real_hud = get_tree().get_root().find_child("HUD", true, false)
+		if real_hud and real_hud.has_method("mostrar_notificacion"):
+			real_hud.mostrar_notificacion("🔥 Tezcatlipoca: ¿Un pedazo de cartón pintado en mi dominio? ¡Voy a romperte!")
+			
 	var col = CollisionShape3D.new()
 	var shape = CapsuleShape3D.new(); shape.radius = 0.5; shape.height = 1.6
 	col.shape = shape
@@ -88,6 +94,8 @@ func _physics_process(delta):
 			ejecutar_nodo_ataque(delta)
 		NodeState.CONFUNDIDO:
 			ejecutar_nodo_confusion(delta)
+		NodeState.ATURDIDO:
+			ejecutar_nodo_stunned(delta)
 			
 	move_and_slide()
 
@@ -148,6 +156,15 @@ func ejecutar_nodo_confusion(delta):
 		timer = 0.0
 		current_node = NodeState.PATRULLANDO # Regresa a su rutina base
 
+func ejecutar_nodo_stunned(delta):
+	velocity.x = 0; velocity.z = 0
+	timer += delta
+	# Da vueltas mareado
+	rotation.y -= 25.0 * delta
+	if timer > 2.0:
+		timer = 0.0
+		current_node = NodeState.PERSIGUIENDO
+
 # ==========================================
 # UTILIDADES Y SISTEMA DE DAÑO (Sin Sangre)
 # ==========================================
@@ -162,8 +179,18 @@ func mover_hacia(target: Vector3, vel: float):
 
 func recibir_dano():
 	hp -= 1
+	if is_boss and hp > 0 and hp % 3 == 0:
+		var hud = get_tree().get_root().find_child("HUD", true, false)
+		if hud: hud.mostrar_notificacion("🔥 Tezcatlipoca: ¡Demasiado lento! ¡Hasta los sacrificios peleaban mejor!")
+		
 	if hp <= 0:
 		estallar_en_confeti()
+	else:
+		current_node = NodeState.ATURDIDO
+		timer = 0.0
+		if is_boss:
+			var hud = get_tree().get_root().find_child("HUD", true, false)
+			if hud: hud.mostrar_notificacion("🔥 Tezcatlipoca: ¡Argh! ¡Maldito trompo de madera! ¡Me mareaste!")
 
 func estallar_en_confeti():
 	# En lugar de sangre, es una piñata de papel maché
@@ -187,7 +214,36 @@ func estallar_en_confeti():
 		# Autodestrucción del confeti
 		get_tree().create_timer(4.0).timeout.connect(confeti.queue_free)
 		
+	if is_boss:
+		var hud = get_tree().get_root().find_child("HUD", true, false)
+		if hud: hud.mostrar_notificacion("🔥 Tezcatlipoca: ¡No... mi reflejo se quiebra! ¡La cima te volverá cenizas...!")
+		
 	queue_free() # Destruir enemigo
 
 func generar_random_target():
 	random_target = patrol_center + Vector3(randf_range(-10, 10), 0, randf_range(-10, 10))
+
+# --- HELPERS PARA MODELOS RIGGED ---
+var animation_player: AnimationPlayer
+
+func cargar_glb_runtime(path: String) -> Node3D:
+	var gltf = GLTFDocument.new()
+	var state = GLTFState.new()
+	var real_path = ProjectSettings.globalize_path(path)
+	if FileAccess.file_exists(real_path):
+		var err = gltf.append_from_file(real_path, state)
+		if err == OK: return gltf.generate_scene(state)
+	return null
+
+func buscar_animation_player(node: Node) -> AnimationPlayer:
+	if node is AnimationPlayer: return node
+	for child in node.get_children():
+		var res = buscar_animation_player(child)
+		if res: return res
+	return null
+
+func aplicar_color_recursivo(nodo: Node, mat: Material):
+	if nodo is MeshInstance3D:
+		nodo.material_override = mat
+	for hijo in nodo.get_children():
+		aplicar_color_recursivo(hijo, mat)
