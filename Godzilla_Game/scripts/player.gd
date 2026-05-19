@@ -365,12 +365,26 @@ func animar_alebrije(delta: float, speed_ratio: float, target_angle: float):
 	
 	var t = Time.get_ticks_msec() / 1000.0
 	
+	# Si hay un AnimationPlayer en el modelo GLB, reproducir sus animaciones
+	var anim_player = null
+	for child in root.get_children():
+		if child.has_node("AnimationPlayer"): anim_player = child.get_node("AnimationPlayer")
+		elif child is AnimationPlayer: anim_player = child
+		
+	if anim_player:
+		var curr_anim = anim_player.current_animation
+		if speed_ratio > 0.1:
+			if anim_player.has_animation("Walk") and curr_anim != "Walk": anim_player.play("Walk")
+			elif anim_player.has_animation("walk") and curr_anim != "walk": anim_player.play("walk")
+			elif anim_player.has_animation("run") and curr_anim != "run": anim_player.play("run")
+		else:
+			if anim_player.has_animation("Idle") and curr_anim != "Idle": anim_player.play("Idle")
+			elif anim_player.has_animation("idle") and curr_anim != "idle": anim_player.play("idle")
+	
 	if speed_ratio > 0.1:
-		# Caminar
+		# Caminar (procedural fallback)
 		if torso:
-			torso.position.y = lerp(torso.position.y, 1.4 + abs(sin(t * 15.0)) * 0.15, 10.0 * delta)
-			torso.rotation.z = lerp_angle(torso.rotation.z, sin(t * 7.5) * 0.05, 10.0 * delta)
-			torso.rotation.x = lerp_angle(torso.rotation.x, 0.15, 10.0 * delta)
+			pass
 		if pecho and abdomen:
 			pecho.rotation.z = sin(t * 15.0) * 0.05
 			abdomen.rotation.z = -sin(t * 15.0) * 0.05

@@ -67,7 +67,7 @@ func _init():
 	var tex_obsidiana = load_tex("obsidian_texture_1779131930589.jpg")
 	var tex_madera = load_tex("wood_crate_1779131943519.jpg")
 	var tex_pasto = load_tex("grass_texture_1779131919859.jpg")
-	var tex_caliza = load_tex("aztec_wall.png") # Fotorrealista
+	var tex_caliza = load_tex("limestone_mossy.png") # Fotorrealista generado
 	
 	# Normal map procedimental (para que reaccione a la luz 3D)
 	var noise_normal = FastNoiseLite.new()
@@ -97,17 +97,18 @@ func _init():
 	
 	mat_obsidiana = mat_shader_fallback
 
-	var rock_tex = NoiseTexture2D.new()
-	rock_tex.noise = rock_noise
-	rock_tex.generate_mipmaps = true
-	rock_tex.as_normal_map = true
-	rock_tex.bump_strength = 3.5
-	
-	mat_pared_caliza.albedo_color = Color(0.4, 0.45, 0.4) # Gris roca
+	# MATERIAL PAREDES CALIZA (CUEVA GRABADA FOTORREALISTA)
+	if tex_caliza:
+		mat_pared_caliza.albedo_texture = tex_caliza
+		mat_pared_caliza.uv1_triplanar = true
+		mat_pared_caliza.uv1_scale = Vector3(0.5, 0.5, 0.5)
+	else:
+		mat_pared_caliza.albedo_color = Color(0.1, 0.1, 0.1)
 	mat_pared_caliza.normal_enabled = true
-	mat_pared_caliza.normal_texture = rock_tex
-	mat_pared_caliza.roughness = 0.85
-	mat_pared_caliza.metallic = 0.1
+	mat_pared_caliza.normal_texture = normal_tex
+	mat_pared_caliza.roughness = 1.0 # Roca completamente mate (no brillosa)
+	mat_pared_caliza.metallic = 0.0
+	mat_pared_caliza.specular = 0.1 # Reducir brillo plastico
 	
 	# MATERIAL LAGO DE TEXCOCO (Agua)
 	mat_agua.albedo_color = Color(0.3, 0.35, 0.4, 0.85)
@@ -125,13 +126,19 @@ func _init():
 		mat_madera.albedo_color = Color(0.5, 0.35, 0.2)
 	mat_madera.roughness = 0.9
 
-	# MATERIAL SUELO DE TIERRA/MALEZA (Para el piso principal)
-	if tex_pasto:
-		mat_suelo_tierra.albedo_texture = tex_pasto
+	# MATERIAL SUELO DE TIERRA/
+	var tex_lodo = load_tex("mud_ground.png")
+	if tex_lodo:
+		mat_suelo_tierra.albedo_texture = tex_lodo
 		mat_suelo_tierra.uv1_triplanar = true
-		mat_suelo_tierra.uv1_scale = Vector3(0.1, 0.1, 0.1)
-	mat_suelo_tierra.albedo_color = Color(0.4, 0.35, 0.3) # Tierra más clara y visible (RE4 Mud)
-	mat_suelo_tierra.roughness = 1.0
+		mat_suelo_tierra.uv1_scale = Vector3(0.5, 0.5, 0.5)
+	else:
+		mat_suelo_tierra.albedo_color = Color(0.2, 0.15, 0.1) # Tierra oscura húmeda
+	
+	mat_suelo_tierra.normal_enabled = true
+	mat_suelo_tierra.normal_texture = normal_tex # Reusamos el de las rocas para darle volumen
+	mat_suelo_tierra.roughness = 1.0 # Tierra seca completamente mate
+	mat_suelo_tierra.metallic = 0.0
 	
 	# MATERIAL FLORES CEMPASÚCHIL
 	if tex_pasto:
@@ -243,7 +250,9 @@ func _ready():
 	l_col.shape = l_shape
 	lago.add_child(l_col)
 	lago.position = Vector3(0, -6, 0)
-	lago.name = "Lago_Texcoco"	# EL CAMINO PRINCIPAL (El Embudo Lineal RE4)
+	lago.name = "Lago_Texcoco"
+	add_child(lago)
+	# EL CAMINO PRINCIPAL (El Embudo Lineal RE4)
 	var spawn_plat = StaticBody3D.new()
 	var s_mesh_inst = MeshInstance3D.new()
 	var s_mesh = BoxMesh.new(); s_mesh.size = Vector3(36, 1, 250)
@@ -257,12 +266,48 @@ func _ready():
 	spawn_plat.name = "Camino_Principal"
 	add_child(spawn_plat)
 	
+	# === PUNTO DE LLEGADA (LA COMBI) ===
+	# Barricada detrás del jugador
+	for i in range(5):
+		var tronco = MeshInstance3D.new()
+		var t_mesh = CylinderMesh.new(); t_mesh.radius = 0.5; t_mesh.height = 12
+		tronco.mesh = t_mesh; tronco.material_override = mat_arbol_muerto
+		tronco.position = Vector3(randf_range(-15, 15), -4.0, 15 + randf_range(-1, 1))
+		tronco.rotation_degrees = Vector3(90, randf_range(-10, 10), 0)
+		var t_body = StaticBody3D.new(); var t_col = CollisionShape3D.new(); var t_shape = CapsuleShape3D.new(); t_shape.radius = 0.5; t_shape.height = 12
+		t_body.add_child(t_col); t_col.shape = t_shape; tronco.add_child(t_body)
+		add_child(tronco)
+		
+	crear_combi_inicio(Vector3(-5, -4.5, 8))
+	
 	# 4.5 FONDOS Y LORE VISUAL INALCANZABLE (La colisión de las épocas)
 	crear_lore_visual()
 
 	# --- BARRERAS NATURALES Y CUEVAS (El Embudo Lineal Orgánico) ---
-	var canon_scene = load("res://assets/models/canon_modulo.glb")
-	var cueva_scene = load("res://assets/models/cueva_tunel.glb")
+	var canon_scene = load("res://assets/models/canon_modulo.glb") if ResourceLoader.exists("res://assets/models/canon_modulo.glb") else null
+	var cueva_scene = load("res://assets/models/cueva_tunel.glb") if ResourceLoader.exists("res://assets/models/cueva_tunel.glb") else null
+	
+	# Generar paredes de cañón procedurales para cuando falten los GLB
+	for z_canyon in range(0, -210, -20):
+		# Pared izquierda
+		for height_i in range(3):
+			var wall_l = MeshInstance3D.new()
+			var wl_mesh = SphereMesh.new(); wl_mesh.radius = randf_range(3.0, 6.0); wl_mesh.height = wl_mesh.radius * 2.2
+			wall_l.mesh = wl_mesh; wall_l.material_override = mat_pared_caliza
+			wall_l.position = Vector3(-20 + randf_range(-2, 2), -2 + height_i * 4, z_canyon + randf_range(-4, 4))
+			var wl_body = StaticBody3D.new(); var wl_col = CollisionShape3D.new(); var wl_shape = SphereShape3D.new(); wl_shape.radius = wl_mesh.radius * 0.9; wl_col.shape = wl_shape; wl_body.add_child(wl_col); wall_l.add_child(wl_body)
+			add_child(wall_l)
+		# Pared derecha
+		for height_i in range(3):
+			var wall_r = MeshInstance3D.new()
+			var wr_mesh = SphereMesh.new(); wr_mesh.radius = randf_range(3.0, 6.0); wr_mesh.height = wr_mesh.radius * 2.2
+			wall_r.mesh = wr_mesh; wall_r.material_override = mat_pared_caliza
+			wall_r.position = Vector3(20 + randf_range(-2, 2), -2 + height_i * 4, z_canyon + randf_range(-4, 4))
+			var wr_body = StaticBody3D.new(); var wr_col = CollisionShape3D.new(); var wr_shape = SphereShape3D.new(); wr_shape.radius = wr_mesh.radius * 0.9; wr_col.shape = wr_shape; wr_body.add_child(wr_col); wall_r.add_child(wr_body)
+			add_child(wall_r)
+		# Árbol muerto a los costados
+		crear_arbol_caido(Vector3(-10 + randf_range(-3,3), -4.0, z_canyon + randf_range(-5,5)), randf_range(0, 360))
+		crear_arbol_caido(Vector3(10 + randf_range(-3,3), -4.0, z_canyon + randf_range(-5,5)), randf_range(0, 360))
 	
 	for z in range(5, -205, -10):
 		var modulo
@@ -282,7 +327,7 @@ func _ready():
 				add_child(luz)
 				
 				# Raíz colgando del techo (Árbol invertido)
-				var raiz = load("res://assets/models/arbol_muerto_re4.glb")
+				var raiz = load("res://models/arbol_muerto_re4.glb") if ResourceLoader.exists("res://models/arbol_muerto_re4.glb") else null
 				if raiz:
 					var r_node = raiz.instantiate()
 					r_node.position = Vector3(randf_range(-4, 4), 10, z)
@@ -293,11 +338,14 @@ func _ready():
 			modulo.position = Vector3(0, -3, z)
 			add_child(modulo)
 			
-			# Aplicar colisiones reales a la piedra y textura húmeda
-			for child in modulo.get_children():
-				if child is MeshInstance3D:
-					child.material_override = mat_pared_caliza
-					child.create_trimesh_collision()
+			# Aplicar material realista recursivamente
+			aplicar_material_glb(modulo, mat_pared_caliza)
+			
+			# Generar colisiones recursivamente
+			var func_colision = func(nodo: Node, f: Callable):
+				if nodo is MeshInstance3D: nodo.create_trimesh_collision()
+				for hijo in nodo.get_children(): f.call(hijo, f)
+			func_colision.call(modulo, func_colision)
 		
 		# Decoración en el suelo (Árboles y rocas caídas normales)
 		crear_arbol_caido(Vector3(-8 if randi() % 2 == 0 else 8, -4, z + randf_range(-3, 3)), randf_range(0, 360))
@@ -364,13 +412,14 @@ func _ready():
 	boss.position = Vector3(0, 50.0, -350) # Cima de la pirámide
 	add_child(boss)
 
-	# BARRERA DE MONOLITOS ORGÁNICOS (Reemplazando los puzzles antiguos por una zona de combate RE4)
-	for x in [-20, -10, 0, 10, 20]:
+	# BARRERA DE ROCAS ORGÁNICAS Y CAÍDAS (Cerrando el cañón de forma natural)
+	for i in range(12):
 		var roca = MeshInstance3D.new()
-		var r_mesh = BoxMesh.new(); r_mesh.size = Vector3(8, 12, 5)
-		roca.mesh = r_mesh; roca.material_override = mat_obsidiana
-		roca.position = Vector3(x, 0, -45)
-		var r_col = CollisionShape3D.new(); var r_shape = BoxShape3D.new(); r_shape.size = r_mesh.size
+		var sph_mesh = SphereMesh.new(); sph_mesh.radius = randf_range(4.0, 7.0); sph_mesh.height = sph_mesh.radius * randf_range(1.5, 2.5)
+		roca.mesh = sph_mesh; roca.material_override = mat_pared_caliza
+		roca.position = Vector3(randf_range(-25, 25), randf_range(-2, 4), -45 + randf_range(-5, 5))
+		roca.rotation_degrees = Vector3(randf_range(-30, 30), randf_range(0, 360), randf_range(-30, 30))
+		var r_col = CollisionShape3D.new(); var r_shape = SphereShape3D.new(); r_shape.radius = sph_mesh.radius * 0.9
 		r_col.shape = r_shape
 		var static_body = StaticBody3D.new(); static_body.add_child(r_col); roca.add_child(static_body)
 		add_child(roca)
@@ -404,19 +453,48 @@ func crear_npc_xolo(pos: Vector3):
 	col.shape = shape
 	npc.add_child(col)
 	
-	var xolo_pivot = cargar_glb_runtime("res://models/xolo_anim.glb")
-	if not xolo_pivot: xolo_pivot = Node3D.new() # Fallback
-	xolo_pivot.scale = Vector3(0.5, 0.5, 0.5) # Escala ajustada temporalmente
+	# ENSAMBLAJE PROCEDURAL: PERRO XOLOITZCUINTLE (FANTASMAL)
+	var xolo_pivot = Node3D.new()
+	xolo_pivot.scale = Vector3(0.5, 0.5, 0.5)
 	
 	var mat_espiritu = StandardMaterial3D.new()
 	mat_espiritu.albedo_color = Color(0.1, 0.9, 1.0, 0.6) # Azul/Cian fantasma
 	mat_espiritu.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat_espiritu.emission_enabled = true
-	mat_espiritu.emission = Color(0.0, 1.0, 0.8)
-	mat_espiritu.emission_energy_multiplier = 0.8
-	mat_espiritu.rim_enabled = true
-	mat_espiritu.rim = 1.0
-	aplicar_material_glb(xolo_pivot, mat_espiritu)
+	mat_espiritu.emission_enabled = true; mat_espiritu.emission = Color(0.0, 1.0, 0.8); mat_espiritu.emission_energy_multiplier = 0.8
+	
+	var crear_pieza = func(padre, mesh_type, size, pos, rot):
+		var mesh_inst = MeshInstance3D.new()
+		var m
+		if mesh_type == "capsule": m = CapsuleMesh.new(); m.radius = size.x; m.height = size.y; m.radial_segments = 12
+		elif mesh_type == "cylinder": m = CylinderMesh.new(); m.top_radius=size.x; m.bottom_radius=size.x; m.height=size.y; m.radial_segments=10
+		else: m = BoxMesh.new(); m.size = size
+		mesh_inst.mesh = m; mesh_inst.material_override = mat_espiritu
+		mesh_inst.position = pos; mesh_inst.rotation_degrees = rot
+		padre.add_child(mesh_inst)
+		return mesh_inst
+		
+	# Cuerpo Perro
+	var cuerpo = crear_pieza.call(xolo_pivot, "capsule", Vector2(0.4, 1.2), Vector3(0, 0.8, 0), Vector3(90, 0, 0))
+	var cuello = crear_pieza.call(cuerpo, "capsule", Vector2(0.25, 0.6), Vector3(0, 0.5, 0.2), Vector3(-45, 0, 0))
+	var cabeza = crear_pieza.call(cuello, "capsule", Vector2(0.2, 0.4), Vector3(0, 0.3, 0.1), Vector3(-45, 0, 0))
+	var hocico = crear_pieza.call(cabeza, "cylinder", Vector2(0.12, 0.3), Vector3(0, 0.1, 0.2), Vector3(-90, 0, 0))
+	
+	# Orejas puntiagudas de Xolo
+	for i in [-1, 1]:
+		var pr = PrismMesh.new(); pr.size = Vector3(0.1, 0.3, 0.05); var oreja = MeshInstance3D.new()
+		oreja.mesh = pr; oreja.material_override = mat_espiritu
+		oreja.position = Vector3(0.15*i, 0.2, -0.05); oreja.rotation_degrees.z = 20*i
+		cabeza.add_child(oreja)
+		
+	# Patas (4)
+	crear_pieza.call(cuerpo, "capsule", Vector2(0.15, 0.8), Vector3(0.25, 0.4, -0.4), Vector3(90, 0, 0)) # Delantera Der
+	crear_pieza.call(cuerpo, "capsule", Vector2(0.15, 0.8), Vector3(-0.25, 0.4, -0.4), Vector3(90, 0, 0)) # Delantera Izq
+	crear_pieza.call(cuerpo, "capsule", Vector2(0.18, 0.8), Vector3(0.25, -0.4, -0.4), Vector3(90, 0, 0)) # Trasera Der
+	crear_pieza.call(cuerpo, "capsule", Vector2(0.18, 0.8), Vector3(-0.25, -0.4, -0.4), Vector3(90, 0, 0)) # Trasera Izq
+	
+	# Cola
+	crear_pieza.call(cuerpo, "cylinder", Vector2(0.08, 0.6), Vector3(0, -0.6, 0.1), Vector3(45, 0, 0))
+
 	
 	animar_tijuana(xolo_pivot) # Reproducirá "Trot" o animación default
 	
@@ -698,152 +776,174 @@ func crear_modelo_tijuana() -> Node3D:
 	var root = Node3D.new()
 	root.name = "tijuana_mesh_root"
 	
-	# Materiales Alebrije con Texturas Procedurales
-	var noise = FastNoiseLite.new()
-	noise.noise_type = FastNoiseLite.TYPE_CELLULAR
-	noise.frequency = 0.05
-	noise.cellular_jitter = 1.0
-	var noise_tex = NoiseTexture2D.new()
-	noise_tex.noise = noise
-	noise_tex.generate_mipmaps = true
-	noise_tex.as_normal_map = true
-	noise_tex.bump_strength = 2.0
+	# Materiales Alebrije con Texturas de Imagen de Alta Resolución
+	var tex_skin = load_tex("alebrije_skin.png")
+	var tex_wings = load_tex("alebrije_wings.png")
 	
 	var mat_cuerpo = StandardMaterial3D.new()
-	mat_cuerpo.albedo_color = Color(0.0, 0.8, 0.9) # Cian
-	mat_cuerpo.roughness = 0.6
-	mat_cuerpo.normal_enabled = true
-	mat_cuerpo.normal_texture = noise_tex
-	
-	var mat_secundario = StandardMaterial3D.new()
-	mat_secundario.albedo_color = Color(1.0, 0.0, 0.5) # Magenta
-	mat_secundario.roughness = 0.7
-	mat_secundario.normal_enabled = true
-	mat_secundario.normal_texture = noise_tex
+	mat_cuerpo.albedo_color = Color(0.3, 0.9, 1.0) # Cian brillante ajustado
+	mat_cuerpo.albedo_texture = tex_skin
+	mat_cuerpo.uv1_triplanar = true
+	mat_cuerpo.uv1_scale = Vector3(5.0, 5.0, 5.0) # Escamas pequeñas realistas de iguana
+	mat_cuerpo.roughness = 0.3 # Escamas pulidas
 	
 	var mat_alas = StandardMaterial3D.new()
-	mat_alas.albedo_color = Color(1.0, 0.5, 0.0) # Naranja brillante
-	mat_alas.roughness = 0.3
+	mat_alas.albedo_texture = tex_wings
+	mat_alas.emission_enabled = true
+	mat_alas.emission_texture = tex_wings
+	mat_alas.emission_energy_multiplier = 1.5
+	# ENSAMBLAJE PROCEDURAL MODULAR (Retro 3D Fotorrealista pero más curvo)
+	var modelo = Node3D.new()
+	modelo.name = "tijuana_mesh_root"
+	modelo.position.y = 0.5
+	root.add_child(modelo)
 	
-	var mat_ojos = StandardMaterial3D.new()
-	mat_ojos.albedo_color = Color(1.0, 0.9, 0.0)
-	mat_ojos.emission_enabled = true
-	mat_ojos.emission = Color(1.0, 0.9, 0.0)
+	# Función auxiliar para partes curvas y con más lados (Cápsulas, Cilindros, Esferas)
+	var crear_pieza = func(padre, mesh_type, size, pos, rot, mat):
+		var mesh_inst = MeshInstance3D.new()
+		var m
+		if mesh_type == "capsule":
+			m = CapsuleMesh.new(); m.radius = size.x; m.height = size.y; m.radial_segments = 16; m.rings = 8
+		elif mesh_type == "cylinder":
+			m = CylinderMesh.new(); m.top_radius = size.x; m.bottom_radius = size.x; m.height = size.y; m.radial_segments = 12
+		elif mesh_type == "sphere":
+			m = SphereMesh.new(); m.radius = size.x; m.height = size.y; m.radial_segments = 16; m.rings = 8
+		else: # prism / box fallback
+			m = BoxMesh.new(); m.size = size
+		mesh_inst.mesh = m; mesh_inst.material_override = mat
+		mesh_inst.position = pos; mesh_inst.rotation_degrees = rot
+		padre.add_child(mesh_inst)
+		return mesh_inst
 	
-	# Torso (Base)
-	var torso = Node3D.new()
+	# Torso Central Curvo (Cápsulas)
+	var torso = crear_pieza.call(modelo, "capsule", Vector2(0.3, 0.7), Vector3(0, 0.8, 0), Vector3(15, 0, 0), mat_cuerpo)
 	torso.name = "torso"
-	torso.position.y = 1.4
-	root.add_child(torso)
+	var pecho = crear_pieza.call(torso, "capsule", Vector2(0.35, 0.6), Vector3(0, 0.35, 0.05), Vector3(0, 0, 0), mat_cuerpo)
+	pecho.name = "pecho"
+	var abdomen = crear_pieza.call(torso, "sphere", Vector2(0.35, 0.5), Vector3(0, -0.3, 0.05), Vector3(0, 0, 0), mat_cuerpo)
+	abdomen.name = "abdomen"
 	
-	# 1. Pecho (High Poly)
-	var pecho = MeshInstance3D.new(); pecho.name = "pecho"
-	var t_mesh = CapsuleMesh.new(); t_mesh.radius = 0.45; t_mesh.height = 1.0; t_mesh.radial_segments = 128; t_mesh.rings = 64
-	pecho.mesh = t_mesh; pecho.material_override = mat_cuerpo
-	pecho.position.y = 0.3
-	torso.add_child(pecho)
+	# Cuello y Cabeza (Iguana más orgánica)
+	var cuello = crear_pieza.call(pecho, "cylinder", Vector2(0.15, 0.4), Vector3(0, 0.3, 0.1), Vector3(30, 0, 0), mat_cuerpo)
+	var cabeza = crear_pieza.call(cuello, "capsule", Vector2(0.2, 0.4), Vector3(0, 0.25, 0.05), Vector3(-15, 0, 0), mat_cuerpo)
+	var hocico = crear_pieza.call(cabeza, "cylinder", Vector2(0.12, 0.4), Vector3(0, -0.05, 0.3), Vector3(80, 0, 0), mat_cuerpo) # Hocico redondo largo
+	var mandibula = crear_pieza.call(cabeza, "cylinder", Vector2(0.1, 0.35), Vector3(0, -0.15, 0.3), Vector3(85, 0, 0), mat_cuerpo)
 	
-	# 2. Abdomen (High Poly)
-	var abdomen = MeshInstance3D.new(); abdomen.name = "abdomen"
-	var ab_mesh = SphereMesh.new(); ab_mesh.radius = 0.4; ab_mesh.height = 0.8; ab_mesh.radial_segments = 128; ab_mesh.rings = 64
-	abdomen.mesh = ab_mesh; abdomen.material_override = mat_cuerpo
-	abdomen.position.y = -0.4
-	torso.add_child(abdomen)
+	# Cresta (Púas - Conos/Cilindros afilados)
+	for i in range(5):
+		var pua = MeshInstance3D.new(); var pr = CylinderMesh.new(); pr.top_radius = 0.01; pr.bottom_radius = 0.08; pr.height = 0.2; pr.radial_segments = 6
+		pua.mesh = pr; pua.material_override = mat_cuerpo
+		pua.position = Vector3(0, 0.2 - (i*0.15), -0.25); pua.rotation_degrees.x = -60
+		torso.add_child(pua)
+		
+	# Cola de Iguana Curva (Cono/Cápsulas que se achican)
+	var cola_root = Node3D.new(); cola_root.position = Vector3(0, -0.1, -0.2); cola_root.name = "cola"; abdomen.add_child(cola_root)
+	var cola_radius = 0.2; var cola_height = 0.35
+	var z_offset = 0.0
+	for i in range(4):
+		var segmento = crear_pieza.call(cola_root, "cylinder", Vector2(cola_radius, cola_height), Vector3(0, -0.1*i, -z_offset - (cola_height/2.0)), Vector3(-75 - (5*i), 0, 0), mat_cuerpo)
+		z_offset += cola_height * 0.9
+		cola_radius *= 0.6 # Cola se afina
 	
-	# Alas (Espalda, montadas en el pecho)
+	# Brazos y Manos (Articulaciones Redondas)
+	for d in [-1, 1]:
+		var brazo = crear_pieza.call(pecho, "capsule", Vector2(0.12, 0.45), Vector3(0.4*d, 0.1, 0), Vector3(10, 0, 15*d), mat_cuerpo)
+		brazo.name = "brazo_r" if d == 1 else "brazo_l"
+		var antebrazo = crear_pieza.call(brazo, "capsule", Vector2(0.1, 0.4), Vector3(0, -0.35, 0.05), Vector3(-15, 0, 0), mat_cuerpo)
+		antebrazo.name = "codo"
+		var mano = crear_pieza.call(antebrazo, "sphere", Vector2(0.12, 0.15), Vector3(0, -0.25, 0.05), Vector3(0, 0, 0), mat_cuerpo)
+		# Dedos mano (Cilindros finos curvados)
+		for f in [-1, 0, 1]:
+			crear_pieza.call(mano, "cylinder", Vector2(0.02, 0.18), Vector3(f*0.05, 0, 0.15), Vector3(80, 0, f*5), mat_cuerpo)
+			
+	# Piernas y Pies musculosos
+	for d in [-1, 1]:
+		var pierna = crear_pieza.call(abdomen, "capsule", Vector2(0.18, 0.5), Vector3(0.25*d, -0.2, 0), Vector3(-15, 0, 10*d), mat_cuerpo)
+		pierna.name = "pierna_r" if d == 1 else "pierna_l"
+		var espinilla = crear_pieza.call(pierna, "capsule", Vector2(0.14, 0.45), Vector3(0, -0.35, -0.1), Vector3(20, 0, 0), mat_cuerpo)
+		espinilla.name = "rodilla"
+		var pie = crear_pieza.call(espinilla, "capsule", Vector2(0.12, 0.35), Vector3(0, -0.25, 0.1), Vector3(70, 0, 0), mat_cuerpo)
+		# Dedos pie
+		for f in [-1, 0, 1]:
+			crear_pieza.call(pie, "cylinder", Vector2(0.03, 0.15), Vector3(f*0.06, 0.1, -0.1), Vector3(0, 0, f*10), mat_cuerpo)
+
+	
+	# === ACCESORIOS REALISTAS ===
+	# 1. Cangurera (Riñonera táctica de cuero oscuro en la cintura)
+	var cangurera = MeshInstance3D.new()
+	var cang_mesh = CapsuleMesh.new(); cang_mesh.radius = 0.15; cang_mesh.height = 0.6
+	var mat_cuero = StandardMaterial3D.new(); mat_cuero.albedo_color = Color(0.15, 0.1, 0.05); mat_cuero.roughness = 0.8
+	cangurera.mesh = cang_mesh; cangurera.material_override = mat_cuero
+	cangurera.position = Vector3(0, 0.4, 0.4) # Al frente en la cintura
+	cangurera.rotation_degrees.z = 90
+	modelo.add_child(cangurera)
+	
+	# Bolsillo de la cangurera
+	var bolsillo = MeshInstance3D.new()
+	var bol_mesh = BoxMesh.new(); bol_mesh.size = Vector3(0.2, 0.15, 0.2)
+	bolsillo.mesh = bol_mesh; bolsillo.material_override = mat_cuero
+	bolsillo.position = Vector3(0, 0, 0.15)
+	cangurera.add_child(bolsillo)
+	
+	# 2. GoPro (Cámara deportiva en la cabeza/pecho)
+	var gopro_mount = Node3D.new()
+	gopro_mount.position = Vector3(0, 1.4, 0.35) # Pecho/Hombro alto
+	modelo.add_child(gopro_mount)
+	
+	var gopro_cuerpo = MeshInstance3D.new()
+	var go_mesh = BoxMesh.new(); go_mesh.size = Vector3(0.1, 0.08, 0.05)
+	var mat_gopro = StandardMaterial3D.new(); mat_gopro.albedo_color = Color(0.1, 0.1, 0.1); mat_gopro.metallic = 0.5; mat_gopro.roughness = 0.2
+	gopro_cuerpo.mesh = go_mesh; gopro_cuerpo.material_override = mat_gopro
+	gopro_mount.add_child(gopro_cuerpo)
+	
+	var gopro_lente = MeshInstance3D.new()
+	var l_mesh = CylinderMesh.new(); l_mesh.top_radius = 0.025; l_mesh.bottom_radius = 0.025; l_mesh.height = 0.02
+	var mat_lente = StandardMaterial3D.new(); mat_lente.albedo_color = Color(0, 0, 0); mat_lente.metallic = 1.0; mat_lente.roughness = 0.0
+	gopro_lente.mesh = l_mesh; gopro_lente.material_override = mat_lente
+	gopro_lente.position = Vector3(0, 0, 0.035)
+	gopro_lente.rotation_degrees.x = 90
+	gopro_cuerpo.add_child(gopro_lente)
+	
+	var gopro_led = MeshInstance3D.new()
+	var led_mesh = SphereMesh.new(); led_mesh.radius = 0.005; led_mesh.height = 0.01
+	var mat_led = StandardMaterial3D.new(); mat_led.albedo_color = Color(1, 0, 0); mat_led.emission_enabled = true; mat_led.emission = Color(1, 0, 0); mat_led.emission_energy_multiplier = 2.0
+	gopro_led.mesh = led_mesh; gopro_led.material_override = mat_led
+	gopro_led.position = Vector3(0.03, 0.02, 0.026)
+	gopro_cuerpo.add_child(gopro_led)
+	
+	# Alas (Espalda)
 	for i in [-1, 1]:
 		var ala = MeshInstance3D.new()
 		var a_mesh = PrismMesh.new(); a_mesh.size = Vector3(1.2, 1.5, 0.1)
 		ala.mesh = a_mesh; ala.material_override = mat_alas
-		ala.position = Vector3(0.4 * i, 0.2, 0.3)
+		ala.position = Vector3(0.4 * i, 1.0, 0.3)
 		ala.rotation_degrees = Vector3(15, 20 * i, 30 * i)
-		pecho.add_child(ala)
+		modelo.add_child(ala)
+	
+	# Resortera (Equipada al brazo derecho)
+	var mano_r = modelo.find_child("brazo_r", true, false)
+	if not mano_r: mano_r = modelo # Fallback
+	var arma_pivot = Node3D.new(); arma_pivot.position = Vector3(0, -0.6, 0.2); mano_r.add_child(arma_pivot)
+	var mat_madera_arma = StandardMaterial3D.new(); mat_madera_arma.albedo_color = Color(0.4, 0.2, 0.1)
+	var resortera_base = MeshInstance3D.new(); var rb_m = CylinderMesh.new(); rb_m.top_radius=0.03; rb_m.bottom_radius=0.03; rb_m.height=0.3
+	resortera_base.mesh = rb_m; resortera_base.material_override = mat_madera_arma; arma_pivot.add_child(resortera_base)
+	
+	for j in [-1, 1]:
+		var horqueta = MeshInstance3D.new(); var hq_m = CylinderMesh.new(); hq_m.top_radius=0.02; hq_m.bottom_radius=0.02; hq_m.height=0.2
+		horqueta.mesh = hq_m; horqueta.material_override = mat_madera_arma
+		horqueta.position = Vector3(0.06 * j, 0.2, 0)
+		horqueta.rotation_degrees.z = 30 * j
+		resortera_base.add_child(horqueta)
 		
-	# Púas Orgánicas en la espalda (Espina dorsal usando conos suaves)
-	for i in range(4):
-		var pua = MeshInstance3D.new()
-		var p_mesh = CylinderMesh.new(); p_mesh.top_radius = 0.01; p_mesh.bottom_radius = 0.15; p_mesh.height = 0.5; p_mesh.radial_segments = 64
-		pua.mesh = p_mesh; pua.material_override = mat_secundario
-		pua.position = Vector3(0, 0.4 - (i * 0.3), 0.45)
-		pua.rotation_degrees = Vector3(60, 0, 0)
-		torso.add_child(pua)
+	# Bolsa de la resortera y 10 Semillas de Cacao
+	var liga = Node3D.new(); liga.position = Vector3(0, 0.25, 0.1); resortera_base.add_child(liga)
+	var mat_cacao = StandardMaterial3D.new(); mat_cacao.albedo_color = Color(0.2, 0.1, 0.05)
 	
-	# Cabeza (Esfera súper suave)
-	var cabeza = MeshInstance3D.new(); cabeza.name = "cabeza"
-	var c_mesh = SphereMesh.new(); c_mesh.radius = 0.35; c_mesh.height = 0.7; c_mesh.radial_segments = 128; c_mesh.rings = 64
-	cabeza.mesh = c_mesh; cabeza.material_override = mat_cuerpo
-	cabeza.position = Vector3(0, 0.6, -0.2)
-	pecho.add_child(cabeza)
-	
-	# Hocico (Curvo)
-	var hocico = MeshInstance3D.new()
-	var h_mesh = CapsuleMesh.new(); h_mesh.radius = 0.15; h_mesh.height = 0.5; h_mesh.radial_segments = 128; h_mesh.rings = 64
-	hocico.mesh = h_mesh; hocico.material_override = mat_cuerpo
-	hocico.position = Vector3(0, 0, -0.4)
-	hocico.rotation_degrees.x = 90
-	cabeza.add_child(hocico)
-	
-	# Orejas/Cuernos
-	for i in [-1, 1]:
-		var cuerno = MeshInstance3D.new()
-		var cu_mesh = CylinderMesh.new(); cu_mesh.top_radius = 0.01; cu_mesh.bottom_radius = 0.1; cu_mesh.height = 0.6; cu_mesh.radial_segments = 64
-		cuerno.mesh = cu_mesh; cuerno.material_override = mat_alas
-		cuerno.position = Vector3(0.25 * i, 0.3, 0.1)
-		cuerno.rotation_degrees = Vector3(-30, 0, 40 * i)
-		cabeza.add_child(cuerno)
-		
-		# Ojos esféricos suavizados
-		var ojo = MeshInstance3D.new()
-		var o_mesh = SphereMesh.new(); o_mesh.radius = 0.12; o_mesh.height = 0.24; o_mesh.radial_segments = 64; o_mesh.rings = 32
-		ojo.mesh = o_mesh; ojo.material_override = mat_ojos
-		ojo.position = Vector3(0.2 * i, 0.1, -0.25)
-		ojo.rotation_degrees.x = -15
-		cabeza.add_child(ojo)
-		
-	# Brazos Segmentados (Hombro -> Antebrazo)
-	var brazo_l_pivot = Node3D.new(); brazo_l_pivot.name = "brazo_l"; brazo_l_pivot.position = Vector3(-0.55, 0.2, 0); pecho.add_child(brazo_l_pivot)
-	var brazo_r_pivot = Node3D.new(); brazo_r_pivot.name = "brazo_r"; brazo_r_pivot.position = Vector3(0.55, 0.2, 0); pecho.add_child(brazo_r_pivot)
-	
-	var b_mesh = CapsuleMesh.new(); b_mesh.radius = 0.12; b_mesh.height = 0.6; b_mesh.radial_segments = 128; b_mesh.rings = 64
-	
-	var hombro_l = MeshInstance3D.new(); hombro_l.mesh = b_mesh; hombro_l.material_override = mat_secundario; hombro_l.position.y = -0.25; brazo_l_pivot.add_child(hombro_l)
-	var codo_l = Node3D.new(); codo_l.name = "codo"; codo_l.position.y = -0.25; hombro_l.add_child(codo_l)
-	var antebrazo_l = MeshInstance3D.new(); antebrazo_l.mesh = b_mesh; antebrazo_l.material_override = mat_secundario; antebrazo_l.position.y = -0.25; codo_l.add_child(antebrazo_l)
-	
-	var hombro_r = MeshInstance3D.new(); hombro_r.mesh = b_mesh; hombro_r.material_override = mat_secundario; hombro_r.position.y = -0.25; brazo_r_pivot.add_child(hombro_r)
-	var codo_r = Node3D.new(); codo_r.name = "codo"; codo_r.position.y = -0.25; hombro_r.add_child(codo_r)
-	var antebrazo_r = MeshInstance3D.new(); antebrazo_r.mesh = b_mesh; antebrazo_r.material_override = mat_secundario; antebrazo_r.position.y = -0.25; codo_r.add_child(antebrazo_r)
-	
-	# Piernas Segmentadas (Muslo -> Pantorrilla)
-	var pierna_l_pivot = Node3D.new(); pierna_l_pivot.name = "pierna_l"; pierna_l_pivot.position = Vector3(-0.25, -0.2, 0); abdomen.add_child(pierna_l_pivot)
-	var pierna_r_pivot = Node3D.new(); pierna_r_pivot.name = "pierna_r"; pierna_r_pivot.position = Vector3(0.25, -0.2, 0); abdomen.add_child(pierna_r_pivot)
-	
-	var p_mesh = CapsuleMesh.new(); p_mesh.radius = 0.16; p_mesh.height = 0.6; p_mesh.radial_segments = 128; p_mesh.rings = 64
-	var muslo_l = MeshInstance3D.new(); muslo_l.mesh = p_mesh; muslo_l.material_override = mat_secundario; muslo_l.position.y = -0.25; pierna_l_pivot.add_child(muslo_l)
-	var rodilla_l = Node3D.new(); rodilla_l.name = "rodilla"; rodilla_l.position.y = -0.25; muslo_l.add_child(rodilla_l)
-	var pantorrilla_l = MeshInstance3D.new(); pantorrilla_l.mesh = p_mesh; pantorrilla_l.material_override = mat_secundario; pantorrilla_l.position.y = -0.25; rodilla_l.add_child(pantorrilla_l)
-	
-	var muslo_r = MeshInstance3D.new(); muslo_r.mesh = p_mesh; muslo_r.material_override = mat_secundario; muslo_r.position.y = -0.25; pierna_r_pivot.add_child(muslo_r)
-	var rodilla_r = Node3D.new(); rodilla_r.name = "rodilla"; rodilla_r.position.y = -0.25; muslo_r.add_child(rodilla_r)
-	var pantorrilla_r = MeshInstance3D.new(); pantorrilla_r.mesh = p_mesh; pantorrilla_r.material_override = mat_secundario; pantorrilla_r.position.y = -0.25; rodilla_r.add_child(pantorrilla_r)
-	
-	# Cola Multi-Segmentada Orgánica (5 segmentos)
-	var cola_root = Node3D.new(); cola_root.name = "cola"; cola_root.position = Vector3(0, -0.2, 0.3); abdomen.add_child(cola_root)
-	var parent_node = cola_root
-	for i in range(5):
-		var s_mesh = CapsuleMesh.new(); s_mesh.radius = 0.15 - (i * 0.02); s_mesh.height = 0.4; s_mesh.radial_segments = 64; s_mesh.rings = 32
-		var seg = MeshInstance3D.new()
-		seg.mesh = s_mesh; seg.material_override = mat_secundario
-		seg.position = Vector3(0, 0, 0.3 if i > 0 else 0.15)
-		seg.rotation_degrees.x = 90
-		var pivot = Node3D.new()
-		pivot.name = "seg_" + str(i)
-		pivot.add_child(seg)
-		
-		if i > 0:
-			pivot.position = Vector3(0, 0, 0.3) # Offset relativo al padre
-		parent_node.add_child(pivot)
-		parent_node = seg # El siguiente pivot se montará al final de la cápsula actual
+	for c in range(10):
+		var semilla = MeshInstance3D.new(); var sem_m = CapsuleMesh.new(); sem_m.radius=0.015; sem_m.height=0.04
+		semilla.mesh = sem_m; semilla.material_override = mat_cacao
+		semilla.position = Vector3(randf_range(-0.04, 0.04), randf_range(-0.02, 0.02), randf_range(-0.02, 0.02))
+		liga.add_child(semilla)
 	
 	return root
 
@@ -923,3 +1023,75 @@ func crear_roca_flotante(pos: Vector3, escala: Vector3 = Vector3(1,1,1)):
 		queue.append_array(curr.get_children())
 		
 	add_child(m_inst)
+
+func crear_combi_inicio(pos: Vector3):
+	var combi = Node3D.new()
+	combi.position = pos
+	combi.rotation_degrees.y = 15 # Ligeramente chueca
+	combi.rotation_degrees.z = 5  # Hundida de un lado en el lodo
+	
+	# Materiales de la Combi
+	var mat_pintura = StandardMaterial3D.new(); mat_pintura.albedo_color = Color(0.8, 0.9, 0.9); mat_pintura.roughness = 0.8; mat_pintura.metallic = 0.3 # Celeste vieja
+	var mat_blanco = StandardMaterial3D.new(); mat_blanco.albedo_color = Color(0.9, 0.9, 0.9); mat_blanco.roughness = 0.9
+	var mat_llanta = StandardMaterial3D.new(); mat_llanta.albedo_color = Color(0.1, 0.1, 0.1); mat_llanta.roughness = 1.0
+	var mat_vidrio = StandardMaterial3D.new(); mat_vidrio.albedo_color = Color(0.1, 0.1, 0.1); mat_vidrio.roughness = 0.2; mat_vidrio.metallic = 0.9
+	var mat_faro_roto = StandardMaterial3D.new(); mat_faro_roto.albedo_color = Color(0.5, 0.5, 0.5); mat_faro_roto.roughness = 0.5; mat_faro_roto.emission_enabled = true; mat_faro_roto.emission = Color(1.0, 0.8, 0.5); mat_faro_roto.emission_energy_multiplier = 0.5 # Luz moribunda
+	
+	# Chasis inferior (Celeste)
+	var chasis = MeshInstance3D.new(); var c_m = BoxMesh.new(); c_m.size = Vector3(2.5, 1.2, 5.0)
+	chasis.mesh = c_m; chasis.material_override = mat_pintura; chasis.position.y = 1.0
+	combi.add_child(chasis)
+	
+	# Cabina superior (Blanca)
+	var cabina = MeshInstance3D.new(); var cb_m = BoxMesh.new(); cb_m.size = Vector3(2.4, 1.0, 4.8)
+	cabina.mesh = cb_m; cabina.material_override = mat_blanco; cabina.position.y = 2.1
+	combi.add_child(cabina)
+	
+	# Llantas
+	for x in [-1.1, 1.1]:
+		for z in [-1.8, 1.8]:
+			var llanta = MeshInstance3D.new(); var ll_m = CylinderMesh.new(); ll_m.radius = 0.45; ll_m.height = 0.3
+			llanta.mesh = ll_m; llanta.material_override = mat_llanta
+			llanta.position = Vector3(x, 0.45, z)
+			llanta.rotation_degrees.z = 90
+			combi.add_child(llanta)
+			
+	# Parabrisas frontal
+	var parabrisas = MeshInstance3D.new(); var pb_m = BoxMesh.new(); pb_m.size = Vector3(2.2, 0.8, 0.1)
+	parabrisas.mesh = pb_m; parabrisas.material_override = mat_vidrio
+	parabrisas.position = Vector3(0, 2.1, -2.45)
+	combi.add_child(parabrisas)
+	
+	# Faros rotos (Frontales)
+	for x in [-0.8, 0.8]:
+		var faro = MeshInstance3D.new(); var f_m = SphereMesh.new(); f_m.radius = 0.15; f_m.height = 0.1
+		faro.mesh = f_m; faro.material_override = mat_faro_roto
+		faro.position = Vector3(x, 1.0, -2.5)
+		faro.rotation_degrees.x = 90
+		combi.add_child(faro)
+	
+	# Humo y chispas del motor roto
+	var humo = GPUParticles3D.new()
+	var h_mat = ParticleProcessMaterial.new()
+	h_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	h_mat.emission_sphere_radius = 0.5
+	h_mat.direction = Vector3(0, 1, 0)
+	h_mat.initial_velocity_min = 2.0; h_mat.initial_velocity_max = 4.0
+	h_mat.gravity = Vector3(0, 1, 0)
+	h_mat.color = Color(0.3, 0.3, 0.3, 0.5)
+	humo.process_material = h_mat
+	var h_mesh = SphereMesh.new(); h_mesh.radius = 0.5; h_mesh.height = 1.0
+	var h_m_mat = StandardMaterial3D.new(); h_m_mat.albedo_color = Color(0.2, 0.2, 0.2, 0.5); h_m_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA; h_m_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	h_mesh.material = h_m_mat
+	humo.draw_pass_1 = h_mesh
+	humo.position = Vector3(0, 0.5, -2.5) # Atrás (es escarabajo/combi, motor atrás)
+	humo.amount = 32
+	combi.add_child(humo)
+	
+	# Colisión de la combi
+	var c_col = CollisionShape3D.new(); var cs_m = BoxShape3D.new(); cs_m.size = Vector3(2.5, 2.2, 5.0)
+	c_col.shape = cs_m; c_col.position.y = 1.5
+	var body = StaticBody3D.new(); body.add_child(c_col)
+	combi.add_child(body)
+	
+	add_child(combi)

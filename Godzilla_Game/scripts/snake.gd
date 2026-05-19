@@ -20,10 +20,13 @@ func _ready():
 	
 	for i in range(SEGMENTS):
 		var mesh_inst = MeshInstance3D.new()
-		var box = BoxMesh.new()
+		var esfe = SphereMesh.new()
+		esfe.radial_segments = 12
+		esfe.rings = 6
 		var s = 0.6 if i == 0 else 0.4 * (1.0 - (float(i) / SEGMENTS))
-		box.size = Vector3(s, s, s)
-		mesh_inst.mesh = box
+		esfe.radius = s / 2.0
+		esfe.height = s
+		mesh_inst.mesh = esfe
 		mesh_inst.material_override = mat_snake
 		add_child(mesh_inst)
 		body_nodes.append(mesh_inst)

@@ -6,6 +6,7 @@ var is_playing = false
 var is_skipped = false
 var current_tween: Tween
 var player_ref: CharacterBody3D
+var can_skip = false
 
 func _ready():
 	hud = load("res://scripts/cinematic_hud.gd").new()
@@ -13,7 +14,7 @@ func _ready():
 	set_process_input(true)
 
 func _input(event):
-	if is_playing and not is_skipped:
+	if is_playing and not is_skipped and can_skip:
 		if event.is_action_pressed("ui_cancel") or event.is_action_pressed("shoot") or event.is_action_pressed("ui_accept"):
 			skip_cutscene()
 
@@ -38,6 +39,9 @@ func play_intro_cutscene(player: CharacterBody3D):
 	cine_cam.global_position = Vector3(0, 40, -30)
 	cine_cam.rotation_degrees = Vector3(-30, 0, 0)
 	hud.show_bars(1.5)
+	
+	# Habilitar el salto después de 2 segundos para evitar que el click inicial lo cancele
+	get_tree().create_timer(2.0).timeout.connect(func(): can_skip = true)
 	
 	# 3. Secuencia
 	current_tween = create_tween()
@@ -96,11 +100,7 @@ func end_cutscene():
 	if is_instance_valid(player_ref):
 		player_ref.set_physics_process(true)
 		player_ref.set_process_unhandled_input(true)
-		for child in player_ref.get_children():
-			if child.name == "camera_pivot" or child is Node3D:
-				var spring = child.get_node_or_null("SpringArm")
-				if spring:
-					for c in spring.get_children():
-						if c is Camera3D:
-							c.make_current()
+		player_ref.set_process(true)
+		if "camera" in player_ref and is_instance_valid(player_ref.camera):
+			player_ref.camera.make_current()
 	is_playing = false

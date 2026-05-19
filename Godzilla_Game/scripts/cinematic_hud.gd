@@ -12,16 +12,18 @@ func _ready():
 	top_bar = ColorRect.new()
 	top_bar.color = Color(0, 0, 0, 1)
 	top_bar.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	top_bar.custom_minimum_size = Vector2(0, 0) # Inicia colapsada
+	# Inicia colapsada usando anchors
+	top_bar.anchor_top = 0.0
+	top_bar.anchor_bottom = 0.0
 	add_child(top_bar)
 	
 	# Barra Inferior
 	bottom_bar = ColorRect.new()
 	bottom_bar.color = Color(0, 0, 0, 1)
 	bottom_bar.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	bottom_bar.custom_minimum_size = Vector2(0, 0)
-	# IMPORTANTE: Al anclar abajo, crecer el min_size la hace subir
-	bottom_bar.grow_direction = Control.GROW_DIRECTION_BEGIN
+	# Inicia colapsada usando anchors
+	bottom_bar.anchor_top = 1.0
+	bottom_bar.anchor_bottom = 1.0
 	add_child(bottom_bar)
 	
 	# Subtítulos
@@ -40,22 +42,18 @@ func _ready():
 func show_bars(duration: float = 1.0):
 	if tween: tween.kill()
 	tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE)
-	# Expandir a 120px de alto
-	tween.tween_property(top_bar, "custom_minimum_size:y", 120.0, duration)
-	tween.tween_property(bottom_bar, "custom_minimum_size:y", 120.0, duration)
-	tween.tween_property(top_bar, "size:y", 120.0, duration)
-	tween.tween_property(bottom_bar, "position:y", bottom_bar.get_viewport_rect().size.y - 120.0, duration)
-	tween.tween_property(bottom_bar, "size:y", 120.0, duration)
+	
+	# Usar anchors de forma correcta para animar (0.0 a 0.15 para abarcar el 15% de la pantalla)
+	tween.tween_property(top_bar, "anchor_bottom", 0.15, duration)
+	tween.tween_property(bottom_bar, "anchor_top", 0.85, duration)
 
 func hide_bars(duration: float = 1.0):
 	if tween: tween.kill()
 	tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE)
 	subtitle_label.text = ""
-	tween.tween_property(top_bar, "custom_minimum_size:y", 0.0, duration)
-	tween.tween_property(bottom_bar, "custom_minimum_size:y", 0.0, duration)
-	tween.tween_property(top_bar, "size:y", 0.0, duration)
-	tween.tween_property(bottom_bar, "position:y", bottom_bar.get_viewport_rect().size.y, duration)
-	tween.tween_property(bottom_bar, "size:y", 0.0, duration)
+	
+	tween.tween_property(top_bar, "anchor_bottom", 0.0, duration)
+	tween.tween_property(bottom_bar, "anchor_top", 1.0, duration)
 
 func set_subtitle(text: String):
 	subtitle_label.text = text

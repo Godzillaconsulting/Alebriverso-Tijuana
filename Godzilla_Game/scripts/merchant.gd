@@ -25,33 +25,46 @@ func _ready():
 	col.position.y = 0.5
 	add_child(col)
 	
-	# Vendedor Rigged
-	var vendedor = cargar_glb_runtime("res://models/merchant_anim.glb")
-	if not vendedor: vendedor = Node3D.new()
-	vendedor.position = Vector3(0, 1.0, -1.0)
-	vendedor.scale = Vector3(0.5, 0.5, 0.5) # Escala ajustada
+	# ENSAMBLAJE PROCEDURAL: COMERCIANTE POCHTECA
+	var vendedor = Node3D.new()
+	vendedor.position = Vector3(0, 0.0, -1.0)
 	
 	var mat_sombra = StandardMaterial3D.new()
-	mat_sombra.albedo_color = Color(0.02, 0.0, 0.05, 0.8) # Negro/Morado oscuro
+	mat_sombra.albedo_color = Color(0.05, 0.0, 0.1, 0.8) # Oscuro semi-transparente
 	mat_sombra.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat_sombra.roughness = 1.0
-	mat_sombra.emission_enabled = true
-	mat_sombra.emission = Color(0.3, 0.0, 0.5)
-	mat_sombra.emission_energy_multiplier = 0.2
-	mat_sombra.rim_enabled = true
-	mat_sombra.rim = 0.5
-	mat_sombra.rim_tint = 1.0
+	mat_sombra.emission_enabled = true; mat_sombra.emission = Color(0.2, 0.0, 0.4); mat_sombra.emission_energy_multiplier = 0.5
 	
-	# Usar una mini-función local para aplicar el shader
-	var queue = [vendedor]
-	while queue.size() > 0:
-		var curr = queue.pop_front()
-		if curr is MeshInstance3D:
-			curr.material_override = mat_sombra
-		queue.append_array(curr.get_children())
+	# Función constructora
+	var crear_pieza = func(padre, mesh_type, size, pos, rot, mat):
+		var mesh_inst = MeshInstance3D.new()
+		var m
+		if mesh_type == "capsule":
+			m = CapsuleMesh.new(); m.radius = size.x; m.height = size.y; m.radial_segments = 12; m.rings = 6
+		elif mesh_type == "cylinder":
+			m = CylinderMesh.new(); m.top_radius = size.x; m.bottom_radius = size.x; m.height = size.y; m.radial_segments = 10
+		else: # Box
+			m = BoxMesh.new(); m.size = size
+		mesh_inst.mesh = m; mesh_inst.material_override = mat
+		mesh_inst.position = pos; mesh_inst.rotation_degrees = rot
+		padre.add_child(mesh_inst)
+		return mesh_inst
+		
+	# Túnica / Cuerpo
+	var cuerpo = crear_pieza.call(vendedor, "capsule", Vector2(0.4, 1.2), Vector3(0, 0.8, 0), Vector3(10, 0, 0), mat_sombra)
+	# Cabeza oculta en capucha
+	var cabeza = crear_pieza.call(cuerpo, "capsule", Vector2(0.25, 0.5), Vector3(0, 0.6, 0.1), Vector3(20, 0, 0), mat_sombra)
+	# Mochila (Caja de madera mágica)
+	var mochila = crear_pieza.call(cuerpo, "box", Vector3(0.6, 0.8, 0.4), Vector3(0, 0.2, -0.4), Vector3(-15, 0, 0), mat_sombra)
+	# Brazos
+	var brazo_r = crear_pieza.call(cuerpo, "capsule", Vector2(0.12, 0.6), Vector3(0.45, 0.1, 0.1), Vector3(-30, 0, 15), mat_sombra)
+	var brazo_l = crear_pieza.call(cuerpo, "capsule", Vector2(0.12, 0.6), Vector3(-0.45, 0.1, 0.1), Vector3(20, 0, -15), mat_sombra)
+	# Bastón
+	var baston = crear_pieza.call(brazo_r, "cylinder", Vector2(0.04, 1.8), Vector3(0, -0.3, 0.2), Vector3(30, 0, 0), mat_sombra)
 	
-	# Usamos un helper para buscar AnimationPlayer y animarlo
-	animar_modelo(vendedor)
+	# Efecto de flotación simple
+	var t = Time.get_ticks_msec() / 1000.0
+	vendedor.position.y += sin(t * 2.0) * 0.1
 	add_child(vendedor)
 	
 	# Texto flotante (El grito del tianguis)
